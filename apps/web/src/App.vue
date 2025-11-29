@@ -28,9 +28,8 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import type { ApiHealth } from '@types'
 
-const health = ref<ApiHealth | null>(null)
+const health = ref<{ status: string; timestamp: string } | null>(null)
 const users = ref<any[]>([])
 const error = ref<string>('')
 const userForm = ref({ email: '', name: '' })

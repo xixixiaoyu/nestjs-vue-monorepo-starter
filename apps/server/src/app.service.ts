@@ -1,9 +1,8 @@
 import { Injectable } from '@nestjs/common'
-import type { ApiHealth } from '@types'
 
 @Injectable()
 export class AppService {
-  getHealth(): ApiHealth {
+  getHealth(): { status: 'ok'; timestamp: string } {
     return { status: 'ok', timestamp: new Date().toISOString() }
   }
 }

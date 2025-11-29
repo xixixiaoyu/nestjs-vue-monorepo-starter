@@ -23,7 +23,8 @@
     "dev": "turbo run dev",
     "build": "turbo run build",
     "typecheck": "turbo run typecheck",
-    "lint": "eslint . --ext .ts,.tsx,.js,.vue -c packages/eslint-config-custom/index.js",
+    "lint": "turbo run lint",
+    "lint:root": "eslint . --ext .ts,.tsx,.js,.vue -c packages/eslint-config-custom/index.js",
     "test": "echo \"no tests yet\"",
     "prepare": "husky install"
   },

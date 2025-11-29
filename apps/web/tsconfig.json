@@ -1,15 +1,13 @@
 {
+  "extends": "../../packages/tsconfig/base.json",
   "compilerOptions": {
-    "target": "ES2020",
-    "module": "ESNext",
-    "moduleResolution": "Node",
     "jsx": "preserve",
-    "strict": true,
     "skipLibCheck": true,
     "resolveJsonModule": true,
     "baseUrl": ".",
     "paths": {
-      "@types": ["../../packages/types/src/index.ts"]
+      "@/*": ["src/*"],
+      "@shared-types": ["../../packages/shared-types/src/index.ts"]
     }
   },
   "include": ["src", "env.d.ts"]
