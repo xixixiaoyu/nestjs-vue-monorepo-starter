@@ -1,0 +1,52 @@
+{
+  "$schema": "https://wails.io/schemas/config.v2.json",
+  "name": "desktop",
+  "outputfilename": "desktop",
+  "frontend": {
+    "dir": "../web",
+    "dev": {
+      "cmd": "cd ../web && pnpm dev",
+      "port": 5173,
+      "frontendUrl": "http://localhost:5173"
+    },
+    "build": {
+      "cmd": "cd ../web && pnpm build",
+      "outputDir": "../web/dist"
+    }
+  },
+  "backend": {
+    "dir": "./src",
+    "go": {
+      "main": "./main.go",
+      "md": "main.md",
+      "gi": {
+        "dir": "./src/gen",
+        "package": "gen"
+      }
+    }
+  },
+  "author": {
+    "name": "Project Author",
+    "email": "author@example.com"
+  },
+  "info": {
+    "productName": "Desktop App",
+    "productVersion": "0.1.0",
+    "copyright": "Copyright © 2024",
+    "comments": "Desktop application built with Wails v2"
+  },
+  "nsisType": "multiple",
+  "obfuscated": false,
+  "garbleargs": "",
+  "upx": false,
+  "upxflags": "",
+  "runNonNativeBuildHooks": false,
+  "build": {
+    "compiler": "gc",
+    "ldflags": ["-s", "-w"]
+  },
+  "garble": {
+    "enabled": false,
+    "args": ""
+  }
+}

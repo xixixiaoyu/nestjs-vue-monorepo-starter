@@ -1,0 +1,18 @@
+{
+  "name": "@desktop",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "echo 'Starting Wails dev mode...' && $(go env GOPATH)/bin/wails dev",
+    "build": "echo 'Building frontend first...' && cd ../web && pnpm build && cd ../desktop && cp -r ../web/dist web && echo 'Building Wails application...' && $(go env GOPATH)/bin/wails build",
+    "build:debug": "echo 'Building Wails application in debug mode...' && $(go env GOPATH)/bin/wails build -debug",
+    "generate-types": "node scripts/generate-types.js",
+    "typecheck": "echo 'No TypeScript files to check'",
+    "lint": "echo 'No linting configured for Go files'",
+    "clean": "rm -rf build/bin"
+  },
+  "devDependencies": {
+    "@project/eslint-config-custom": "workspace:*"
+  }
+}

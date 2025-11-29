@@ -95,3 +95,6 @@ export type PaginatedResponse<T> = {
     totalPages: number
   }
 }
+
+// 导出 Wails 相关类型
+export * from './wails'

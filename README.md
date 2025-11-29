@@ -1,13 +1,14 @@
-# Nest + Vue Monorepo Template
+# Nest + Vue + Wails Monorepo Template
 
-一个采用 Turborepo 的 **NestJS + Vue 3** 单仓库模板，内置 TypeScript、ESLint、Husky、Commitlint 等工程化工具。前端采用 **Shadcn-vue** 风格组件与 **Tailwind CSS**，后端采用 **NestJS + Prisma**。
+一个采用 Turborepo 的 **NestJS + Vue 3 + Wails v2** 单仓库模板，内置 TypeScript、ESLint、Husky、Commitlint 等工程化工具。前端采用 **Shadcn-vue** 风格组件与 **Tailwind CSS**，后端采用 **NestJS + Prisma**，桌面端采用 **Wails v2 (Go)**。
 
 ## 目录结构
 
 - `apps/web`：Vue 3 + Vite，使用 Shadcn-vue 风格组件与 Tailwind
 - `apps/server`：NestJS + Prisma + PostgreSQL（可切换到其他数据库）
+- `apps/desktop`：Wails v2 桌面端应用，复用 Vue 前端代码
 - `packages/eslint-config-custom`：统一 ESLint 配置
-- `packages/shared-types` / `packages/types`：共享类型定义
+- `packages/shared-types` / `packages/types`：共享类型定义（包含 Wails 类型）
 - `packages/tsconfig`：统一 tsconfig 基座
 
 ## 技术栈
@@ -15,6 +16,7 @@
 - 前端：`Vue 3`、`Vite`、`Tailwind CSS`、`radix-vue`、`lucide-vue-next`、`class-variance-authority`、`clsx`、`tailwind-merge`
 - 组件：`shadcn-vue` CLI 生成组件骨架，样式走 Tailwind 原子类
 - 后端：`NestJS`、`Prisma`、`@nestjs/config`、`class-validator`
+- 桌面端：`Wails v2`、`Go 1.21+`
 - 工程：`pnpm`、`Turborepo`、`ESLint`、`Prettier`、`Husky`、`Commitlint`
 
 ## 快速开始
@@ -40,11 +42,19 @@ pnpm --filter @server prisma:generate
 4. 开发模式
 
 ```bash
+# 启动 Web 和 Server
 pnpm run dev
+
+# 启动所有服务（包括桌面端）
+pnpm run dev:all
+
+# 单独启动桌面端
+pnpm run dev:desktop
 ```
 
 - 前端：`http://localhost:5173/`
 - 后端：`http://localhost:3001/`
+- 桌面端：独立窗口应用（加载前端页面）
 
 5. 构建与校验
 
@@ -53,9 +63,14 @@ pnpm run typecheck
 pnpm run lint
 pnpm run test
 pnpm run build
+
+# 构建桌面端
+pnpm run build:desktop
 ```
 
 > CI：`main` 分支启用了 GitHub Actions，自动执行 **lint → test → build**，模板使用者只需保持脚本可通过即可。
+>
+> 💡 **桌面端集成**：本项目已集成 Wails v2 桌面端，详细说明请参考 [DESKTOP_INTEGRATION.md](./DESKTOP_INTEGRATION.md)
 
 ## 前端说明（apps/web）
 
@@ -109,8 +124,11 @@ import { Button, Card, Input, Alert } from '@/components/ui'
 
 ## 脚本（根目录）
 
-- `dev`：`turbo run dev`
+- `dev`：`turbo run dev`（Web + Server）
+- `dev:all`：同时启动 Web、Server 和 Desktop
+- `dev:desktop`：`turbo run dev --filter=@desktop`
 - `build`：`turbo run build`
+- `build:desktop`：`turbo run build --filter=@desktop`
 - `typecheck`：`turbo run typecheck`
 - `lint`：`turbo run lint`
 - `test`：`turbo run test`
@@ -136,9 +154,18 @@ import { Button, Card, Input, Alert } from '@/components/ui'
 - Husky 钩子会在提交时检查 commit message（`.husky/commit-msg` + `commitlint.config.js`）。
 - 新增包或子应用时，遵守 `packages/tsconfig` 与 `packages/eslint-config-custom` 的约束。
 
+## 桌面端特性
+
+- **前端复用**：桌面端直接复用 Vue 3 前端代码，无需重复开发
+- **统一类型**：Wails 生成的 TypeScript 类型与共享类型统一管理
+- **环境检测**：自动识别 Web/桌面环境，提供条件功能
+- **原生功能**：支持文件操作、窗口控制、系统通知等桌面端特性
+- **开发体验**：一键启动所有服务，热重载支持
+
 ## 变更记录
 
 - 近期：
+  - 🎉 新增 Wails v2 桌面端集成，支持前端代码复用
   - 前端组件库迁移到 Shadcn-vue 风格，统一聚合导出与 variants。
   - Tailwind 加入 `tailwindcss-animate`，暗色与主题变量完善。
   - 根脚本补充 `lint:root`，统一工程化体验。
