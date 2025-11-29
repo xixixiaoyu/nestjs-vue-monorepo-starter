@@ -1,6 +1,10 @@
 {
-  "name": "@config/vitest",
+  "name": "@project/vitest-config",
   "private": true,
   "version": "0.1.0",
-  "type": "module"
+  "type": "module",
+  "main": "base.ts",
+  "dependencies": {
+    "vitest": "^1.0.0"
+  }
 }
