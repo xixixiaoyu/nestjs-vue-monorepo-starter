@@ -45,10 +45,16 @@ export class AuthService {
       throw new UnauthorizedException('邮箱或密码错误')
     }
 
+    // 从数据库获取用户的实际角色
+    const userRecord = await this.prisma.user.findUnique({
+      where: { id: user.id },
+      select: { role: true },
+    })
+
     const payload: JwtPayload = {
       sub: user.id,
       email: user.email,
-      role: 'user', // 这里应该从数据库获取实际角色
+      role: userRecord?.role || 'user',
     }
 
     const accessToken = this.generateAccessToken(payload)

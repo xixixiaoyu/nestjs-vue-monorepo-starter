@@ -16,37 +16,37 @@ export class NotFoundException extends BusinessException {
   }
 }
 
-export class UnauthorizedException extends BusinessException {
+export class BusinessUnauthorizedException extends BusinessException {
   constructor(message: string = 'Unauthorized') {
     super(message, 'UNAUTHORIZED', HttpStatus.UNAUTHORIZED)
   }
 }
 
-export class ForbiddenException extends BusinessException {
+export class BusinessForbiddenException extends BusinessException {
   constructor(message: string = 'Forbidden') {
     super(message, 'FORBIDDEN', HttpStatus.FORBIDDEN)
   }
 }
 
-export class ValidationException extends BusinessException {
+export class BusinessValidationException extends BusinessException {
   constructor(message: string) {
     super(message, 'VALIDATION_ERROR', HttpStatus.BAD_REQUEST)
   }
 }
 
-export class BadRequestException extends BusinessException {
+export class BusinessBadRequestException extends BusinessException {
   constructor(message: string) {
     super(message, 'BAD_REQUEST', HttpStatus.BAD_REQUEST)
   }
 }
 
-export class ConflictException extends BusinessException {
+export class BusinessConflictException extends BusinessException {
   constructor(message: string) {
     super(message, 'CONFLICT', HttpStatus.CONFLICT)
   }
 }
 
-export class InternalServerErrorException extends BusinessException {
+export class BusinessInternalServerErrorException extends BusinessException {
   constructor(message: string = 'Internal server error') {
     super(message, 'INTERNAL_ERROR', HttpStatus.INTERNAL_SERVER_ERROR)
   }

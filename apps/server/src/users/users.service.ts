@@ -41,6 +41,9 @@ export class UsersService extends BaseService {
       return userDtos
     } catch (error) {
       this.handleDatabaseError(error)
+      // 由于 handleDatabaseError 会抛出异常，这里永远不会执行
+      // 但为了类型安全，我们添加一个返回语句
+      return []
     }
   }
 
@@ -73,6 +76,9 @@ export class UsersService extends BaseService {
       return userDto
     } catch (error) {
       this.handleDatabaseError(error)
+      // 由于 handleDatabaseError 会抛出异常，这里永远不会执行
+      // 但为了类型安全，我们添加一个返回语句
+      throw error
     }
   }
 
@@ -95,6 +101,9 @@ export class UsersService extends BaseService {
       }
     } catch (error) {
       this.handleDatabaseError(error)
+      // 由于 handleDatabaseError 会抛出异常，这里永远不会执行
+      // 但为了类型安全，我们添加一个返回语句
+      return null
     }
   }
 
@@ -117,6 +126,9 @@ export class UsersService extends BaseService {
       }
     } catch (error) {
       this.handleDatabaseError(error)
+      // 由于 handleDatabaseError 会抛出异常，这里永远不会执行
+      // 但为了类型安全，我们添加一个返回语句
+      return null
     }
   }
 }

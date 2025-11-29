@@ -15,36 +15,50 @@ export const REDIS = 'REDIS'
         const redisPort = configService.get<number>('REDIS_PORT', 6379)
         const redisPassword = configService.get<string>('REDIS_PASSWORD')
 
-        // 如果没有配置 Redis，创建一个模拟的 Redis 客户端
-        if (!redisHost) {
-          logger.log('Redis not configured, using mock Redis client')
-          return new Redis({
-            host: 'localhost',
-            port: 6379,
-            lazyConnect: true,
-            maxRetriesPerRequest: 0,
-          })
-        }
-
-        const redis = new Redis({
+        // 创建 Redis 客户端配置
+        const redisConfig: any = {
           host: redisHost,
           port: redisPort,
-          password: redisPassword,
           retryDelayOnFailover: 100,
           enableReadyCheck: false,
-          maxRetriesPerRequest: null,
-          // 添加连接错误处理
+          maxRetriesPerRequest: 3,
           lazyConnect: true,
-          reconnectOnError: true,
-        } as any)
+          reconnectOnError: (err: Error) => {
+            const targetError = 'READONLY'
+            return err.message.includes(targetError)
+          },
+          // 添加连接超时
+          connectTimeout: 10000,
+          // 添加命令超时
+          commandTimeout: 5000,
+        }
+
+        // 只有在提供了密码时才添加密码配置
+        if (redisPassword) {
+          redisConfig.password = redisPassword
+        }
+
+        const redis = new Redis(redisConfig)
 
         // 添加连接事件监听
         redis.on('connect', () => {
-          logger.log('Redis connected successfully')
+          logger.log(`Redis connected successfully to ${redisHost}:${redisPort}`)
+        })
+
+        redis.on('ready', () => {
+          logger.log('Redis is ready to accept commands')
         })
 
         redis.on('error', (err) => {
-          logger.error('Redis connection error:', err)
+          logger.error(`Redis connection error: ${err.message}`, err.stack)
+        })
+
+        redis.on('close', () => {
+          logger.warn('Redis connection closed')
+        })
+
+        redis.on('reconnecting', () => {
+          logger.log('Redis reconnecting...')
         })
 
         return redis

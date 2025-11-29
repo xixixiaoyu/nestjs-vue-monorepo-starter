@@ -20,10 +20,17 @@ export class TokenBlacklistService {
   }
 
   async clearExpiredTokens(): Promise<void> {
-    // Redis 会自动清理过期的键，这里可以添加额外的清理逻辑
+    // Redis 会自动清理过期的键，这个方法用于手动清理所有黑名单令牌
+    // 警告：这会清除所有黑名单令牌，包括未过期的
+    // 通常不需要调用此方法，除非需要强制清除所有黑名单令牌
     const keys = await this.redis.keys('blacklist:*')
     if (keys.length > 0) {
       await this.redis.del(...keys)
     }
+  }
+
+  async getBlacklistedTokenCount(): Promise<number> {
+    const keys = await this.redis.keys('blacklist:*')
+    return keys.length
   }
 }

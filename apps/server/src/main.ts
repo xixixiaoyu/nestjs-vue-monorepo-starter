@@ -36,11 +36,17 @@ async function bootstrap() {
   }
 
   app.useGlobalPipes(new ValidationPipe({ whitelist: true }))
-  // app.useGlobalFilters(
-  //   new GlobalExceptionFilter(),
-  //   new HttpExceptionFilter(),
-  //   new BusinessExceptionFilter()
-  // )
+
+  // 导入并使用全局异常过滤器
+  const { GlobalExceptionFilter } = await import('./common/filters/global-exception.filter')
+  const { HttpExceptionFilter } = await import('./common/filters/http-exception.filter')
+  const { BusinessExceptionFilter } = await import('./common/filters/business-exception.filter')
+
+  app.useGlobalFilters(
+    new GlobalExceptionFilter(),
+    new HttpExceptionFilter(),
+    new BusinessExceptionFilter()
+  )
 
   const swaggerConfig = new DocumentBuilder()
     .setTitle('Nest + Vue Template API')
