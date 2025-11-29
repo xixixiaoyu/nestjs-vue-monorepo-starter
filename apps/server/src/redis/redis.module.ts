@@ -21,7 +21,7 @@ export const REDIS = 'REDIS'
           return null
         }
 
-        return new Redis({
+        const redis = new Redis({
           host: redisHost,
           port: redisPort,
           password: redisPassword,
@@ -32,6 +32,17 @@ export const REDIS = 'REDIS'
           lazyConnect: true,
           reconnectOnError: true,
         } as any)
+
+        // 添加连接事件监听
+        redis.on('connect', () => {
+          logger.log('Redis connected successfully')
+        })
+
+        redis.on('error', (err) => {
+          logger.error('Redis connection error:', err)
+        })
+
+        return redis
       },
       inject: [ConfigService],
     },

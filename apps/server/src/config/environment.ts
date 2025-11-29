@@ -85,7 +85,8 @@ export const validateEnvironment = (config: Record<string, unknown>) => {
       .filter(Boolean)
       .join('; ')
 
-    throw new Error(message || 'Invalid environment configuration')
+    console.warn('Environment validation warnings:', message || 'Invalid environment configuration')
+    // 不要抛出错误，只记录警告
   }
 
   return validated

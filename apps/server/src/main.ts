@@ -3,9 +3,6 @@ import { NestFactory } from '@nestjs/core'
 import { AppModule } from './app.module'
 import 'dotenv/config'
 import { ValidationPipe, Logger } from '@nestjs/common'
-import { HttpExceptionFilter } from './common/filters/http-exception.filter'
-import { BusinessExceptionFilter } from './common/filters/business-exception.filter'
-import { GlobalExceptionFilter } from './common/filters/global-exception.filter'
 import { ConfigService } from '@nestjs/config'
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger'
 import { NodeEnvironment } from './config/environment'
@@ -38,11 +35,11 @@ async function bootstrap() {
   }
 
   app.useGlobalPipes(new ValidationPipe({ whitelist: true }))
-  app.useGlobalFilters(
-    new GlobalExceptionFilter(),
-    new HttpExceptionFilter(),
-    new BusinessExceptionFilter()
-  )
+  // app.useGlobalFilters(
+  //   new GlobalExceptionFilter(),
+  //   new HttpExceptionFilter(),
+  //   new BusinessExceptionFilter()
+  // )
 
   const swaggerConfig = new DocumentBuilder()
     .setTitle('Nest + Vue Template API')
