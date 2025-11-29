@@ -1,0 +1,8 @@
+node_modules/
+.turbo/
+dist/
+.DS_Store
+.env
+apps/server/dist/
+apps/web/dist/
+apps/web/.vite
