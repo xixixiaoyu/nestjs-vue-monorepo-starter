@@ -56,7 +56,7 @@ export class UnifiedApiService {
       },
       // Web 端：使用 HTTP API
       async () => {
-        return this.httpGet('/app/info')
+        return this.httpGet<Record<string, any>>('/app/info')
       }
     )
   }
@@ -157,6 +157,7 @@ export class UnifiedApiService {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include', // 支持 Cookie
       })
 
       if (!response.ok) {
@@ -184,6 +185,7 @@ export class UnifiedApiService {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(data),
+        credentials: 'include', // 支持 Cookie
       })
 
       if (!response.ok) {
@@ -211,6 +213,7 @@ export class UnifiedApiService {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(data),
+        credentials: 'include', // 支持 Cookie
       })
 
       if (!response.ok) {
@@ -237,6 +240,7 @@ export class UnifiedApiService {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include', // 支持 Cookie
       })
 
       if (!response.ok) {
