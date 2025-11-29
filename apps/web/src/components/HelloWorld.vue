@@ -16,6 +16,6 @@ const user: UserDto = {
   email: 'example@example.com',
   name: 'Example',
   createdAt: new Date().toISOString(),
-  updatedAt: new Date().toISOString()
+  updatedAt: new Date().toISOString(),
 }
 </script>

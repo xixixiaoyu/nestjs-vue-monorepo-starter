@@ -1,16 +1,16 @@
-import { fileURLToPath, URL } from "node:url";
-import vue from "@vitejs/plugin-vue";
+import { fileURLToPath, URL } from 'node:url'
+import vue from '@vitejs/plugin-vue'
 
-import { withVitestBaseConfig } from "../../packages/vitest-config/base";
+import { withVitestBaseConfig } from '../../packages/vitest-config/base'
 
 export default withVitestBaseConfig({
   plugins: [vue()],
   resolve: {
     alias: {
-      "@": fileURLToPath(new URL("./src", import.meta.url)),
+      '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
   test: {
-    environment: "jsdom",
+    environment: 'jsdom',
   },
-});
+})

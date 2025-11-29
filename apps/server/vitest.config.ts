@@ -1,7 +1,7 @@
-import { withVitestBaseConfig } from "../../packages/vitest-config/base";
+import { withVitestBaseConfig } from '../../packages/vitest-config/base'
 
 export default withVitestBaseConfig({
   test: {
-    environment: "node",
+    environment: 'node',
   },
-});
+})

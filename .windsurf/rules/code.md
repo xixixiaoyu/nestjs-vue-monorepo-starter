@@ -25,6 +25,7 @@ trigger: always_on
 ## 🚀 快速检查清单
 
 **每次编码前确认**：
+
 ```
 □ 使用单引号、无分号、两空格缩进？
 □ UI 组件通过 @/components/ui 导入？
@@ -53,6 +54,7 @@ apps/server/src/
 ## 💡 核心代码模式
 
 ### 前端 Vue 组件
+
 ```vue
 <template>
   <div class="flex items-center space-x-2">
@@ -69,6 +71,7 @@ const user = ref<User | null>(null)
 ```
 
 ### 后端 NestJS 模块
+
 ```typescript
 @Controller('users')
 export class UserController {
@@ -94,6 +97,7 @@ export class UserService {
 ```
 
 ### 导入规范
+
 ```typescript
 // UI 组件 - 聚合导入
 import { Button, Input, Card } from '@/components/ui'

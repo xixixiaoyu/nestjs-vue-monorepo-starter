@@ -1,1 +1,1 @@
-module.exports = require("./packages/eslint-config-custom");
+module.exports = require('./packages/eslint-config-custom')

@@ -28,6 +28,7 @@
     "typecheck": "turbo run typecheck",
     "lint": "turbo run lint",
     "lint:fix": "turbo run lint -- --fix",
+    "format": "prettier --cache --write .",
     "test": "turbo run test",
     "prepare": "husky install"
   },
