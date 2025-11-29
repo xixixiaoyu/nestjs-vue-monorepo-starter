@@ -2,7 +2,9 @@ import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/
 import { JwtService } from '@nestjs/jwt'
 import { ConfigService } from '@nestjs/config'
 import { PrismaService } from '../prisma/prisma.service'
+import { TokenBlacklistService } from './token-blacklist.service'
 import bcrypt from 'bcryptjs'
+import { v4 as uuidv4 } from 'uuid'
 import type { LoginInput, RegisterInput, AuthResponse, JwtPayload, UserDto } from '@shared-types'
 
 @Injectable()
@@ -10,7 +12,8 @@ export class AuthService {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
-    private configService: ConfigService
+    private configService: ConfigService,
+    private tokenBlacklistService: TokenBlacklistService
   ) {}
 
   async validateUser(email: string, password: string): Promise<UserDto | null> {
@@ -123,10 +126,26 @@ export class AuthService {
     return { accessToken }
   }
 
-  async logout(refreshToken: string): Promise<void> {
+  async logout(refreshToken: string, accessToken?: string): Promise<void> {
+    // 删除刷新令牌
     await this.prisma.refreshToken.delete({
       where: { token: refreshToken },
     })
+
+    // 如果提供了访问令牌，将其加入黑名单
+    if (accessToken) {
+      const decodedToken = this.jwtService.decode(accessToken) as JwtPayload
+      if (decodedToken && decodedToken.exp) {
+        const expiresIn = decodedToken.exp - Math.floor(Date.now() / 1000)
+        if (expiresIn > 0) {
+          await this.tokenBlacklistService.addToBlacklist(accessToken, expiresIn)
+        }
+      }
+    }
+  }
+
+  async isTokenBlacklisted(token: string): Promise<boolean> {
+    return this.tokenBlacklistService.isBlacklisted(token)
   }
 
   private generateAccessToken(payload: JwtPayload): string {
@@ -134,9 +153,9 @@ export class AuthService {
   }
 
   private async generateRefreshToken(userId: string): Promise<string> {
-    const token = this.generateRandomToken()
+    const token = uuidv4() // 使用 UUID 生成安全的随机令牌
     const expiresAt = new Date()
-    expiresAt.setDate(expiresAt.getDate() + 7) // 7 天后过期
+    expiresAt.setDate(expiresAt.getDate() + 1) // 缩短为 1 天后过期
 
     await this.prisma.refreshToken.create({
       data: {
@@ -147,9 +166,5 @@ export class AuthService {
     })
 
     return token
-  }
-
-  private generateRandomToken(): string {
-    return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
   }
 }

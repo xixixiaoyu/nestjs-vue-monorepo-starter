@@ -1,6 +1,15 @@
 import { plainToInstance } from 'class-transformer'
 import type { ValidationError } from 'class-validator'
-import { IsEnum, IsNumber, IsOptional, IsString, IsArray, validateSync } from 'class-validator'
+import {
+  IsEnum,
+  IsNumber,
+  IsOptional,
+  IsString,
+  IsArray,
+  validateSync,
+  Min,
+  Max,
+} from 'class-validator'
 
 export enum NodeEnvironment {
   Development = 'development',
@@ -15,6 +24,8 @@ class EnvironmentVariables {
 
   @IsNumber()
   @IsOptional()
+  @Min(1)
+  @Max(65535)
   PORT?: number
 
   @IsString()
@@ -33,9 +44,32 @@ class EnvironmentVariables {
   @IsOptional()
   @IsArray()
   CORS_ORIGINS?: string[]
+
+  @IsString()
+  @IsOptional()
+  REDIS_HOST?: string
+
+  @IsNumber()
+  @IsOptional()
+  @Min(1)
+  @Max(65535)
+  REDIS_PORT?: number
+
+  @IsString()
+  @IsOptional()
+  REDIS_PASSWORD?: string
 }
 
 export const validateEnvironment = (config: Record<string, unknown>) => {
+  // 确保 PORT 是数字类型
+  if (config.PORT !== undefined) {
+    config.PORT = Number(config.PORT)
+  }
+  // 确保 REDIS_PORT 是数字类型
+  if (config.REDIS_PORT !== undefined) {
+    config.REDIS_PORT = Number(config.REDIS_PORT)
+  }
+
   const validated = plainToInstance(EnvironmentVariables, config, {
     enableImplicitConversion: true,
   })

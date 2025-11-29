@@ -1,6 +1,9 @@
 import axios, { type AxiosInstance, type AxiosRequestConfig, type AxiosResponse } from 'axios'
 import type { ApiResponse, ApiError, JwtPayload } from '@shared-types'
 
+// 内存中存储访问令牌
+let accessToken: string | null = null
+
 // 创建 axios 实例
 const createApiInstance = (): AxiosInstance => {
   const instance = axios.create({
@@ -9,12 +12,14 @@ const createApiInstance = (): AxiosInstance => {
     headers: {
       'Content-Type': 'application/json',
     },
+    withCredentials: true, // 支持 Cookie
   })
 
   // 请求拦截器 - 添加认证 token
   instance.interceptors.request.use(
     (config) => {
-      const token = localStorage.getItem('accessToken')
+      // 优先使用内存中的 token，其次使用 localStorage（兼容性）
+      const token = accessToken || localStorage.getItem('accessToken')
       if (token) {
         config.headers.Authorization = `Bearer ${token}`
       }
@@ -38,24 +43,30 @@ const createApiInstance = (): AxiosInstance => {
         originalRequest._retry = true
 
         try {
-          const refreshToken = localStorage.getItem('refreshToken')
-          if (refreshToken) {
-            const response = await axios.post('/api/auth/refresh', {
-              refreshToken,
-            })
+          // 尝试使用刷新令牌获取新的访问令牌
+          const response = await axios.post(
+            '/api/auth/refresh',
+            {},
+            {
+              withCredentials: true, // 发送 Cookie
+            }
+          )
 
-            const { accessToken } = response.data
-            localStorage.setItem('accessToken', accessToken)
+          const { accessToken: newAccessToken } = response.data
 
-            // 重新发送原始请求
-            originalRequest.headers.Authorization = `Bearer ${accessToken}`
-            return instance(originalRequest)
-          }
+          // 更新内存和 localStorage 中的 token
+          accessToken = newAccessToken
+          localStorage.setItem('accessToken', newAccessToken)
+
+          // 重新发送原始请求
+          originalRequest.headers.Authorization = `Bearer ${newAccessToken}`
+          return instance(originalRequest)
         } catch (refreshError) {
           // 刷新失败，清除 token 并跳转到登录页
+          accessToken = null
           localStorage.removeItem('accessToken')
           localStorage.removeItem('refreshToken')
-          window.location.href = '/login'
+          window.location.href = '/auth'
           return Promise.reject(refreshError)
         }
       }
@@ -159,6 +170,12 @@ export const handleApiError = (error: any): ApiError => {
 
 // JWT 工具函数
 export const jwtUtils = {
+  // 设置访问令牌
+  setAccessToken(token: string): void {
+    accessToken = token
+    localStorage.setItem('accessToken', token)
+  },
+
   // 解析 JWT token
   parseToken(token: string): JwtPayload | null {
     try {
@@ -187,8 +204,15 @@ export const jwtUtils = {
 
   // 获取当前用户信息
   getCurrentUser(): JwtPayload | null {
-    const token = localStorage.getItem('accessToken')
+    const token = accessToken || localStorage.getItem('accessToken')
     if (!token || this.isTokenExpired(token)) return null
     return this.parseToken(token)
+  },
+
+  // 清除所有令牌
+  clearTokens(): void {
+    accessToken = null
+    localStorage.removeItem('accessToken')
+    localStorage.removeItem('refreshToken')
   },
 }

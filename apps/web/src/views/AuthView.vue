@@ -19,12 +19,12 @@
             <Input v-model="form.name" type="text" placeholder="姓名（可选）" />
           </div>
 
-          <Alert v-if="error" class="mb-4" variant="destructive">
-            {{ error }}
+          <Alert v-if="authStore.error" class="mb-4" variant="destructive">
+            {{ authStore.error }}
           </Alert>
 
-          <Button type="submit" class="w-full" :disabled="loading">
-            {{ loading ? '处理中...' : isLogin ? '登录' : '注册' }}
+          <Button type="submit" class="w-full" :disabled="authStore.loading">
+            {{ authStore.loading ? '处理中...' : isLogin ? '登录' : '注册' }}
           </Button>
         </form>
 
@@ -34,10 +34,10 @@
           </button>
         </div>
 
-        <div v-if="user" class="mt-6 p-4 bg-green-50 rounded">
+        <div v-if="authStore.user" class="mt-6 p-4 bg-green-50 rounded">
           <h3 class="font-semibold mb-2">当前用户信息：</h3>
-          <p>邮箱: {{ user.email }}</p>
-          <p>角色: {{ user.role }}</p>
+          <p>邮箱: {{ authStore.user.email }}</p>
+          <p>角色: {{ authStore.user.role }}</p>
           <Button class="mt-2" variant="outline" @click="logout">退出登录</Button>
         </div>
       </div>
@@ -48,14 +48,12 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { Card, Input, Button, Alert } from '@/components/ui'
-import { api, handleApiError, jwtUtils } from '@/lib/api'
-import type { LoginInput, AuthResponse, JwtPayload } from '@shared-types'
+import { useAuthStore } from '@/stores/auth.store'
+import type { LoginInput } from '@shared-types'
+
+const authStore = useAuthStore()
 
 const isLogin = ref(true)
-const loading = ref(false)
-const error = ref('')
-const user = ref<JwtPayload | null>(null)
-
 const form = ref<LoginInput & { name?: string }>({
   email: '',
   password: '',
@@ -63,64 +61,39 @@ const form = ref<LoginInput & { name?: string }>({
 })
 
 const handleSubmit = async () => {
-  loading.value = true
-  error.value = ''
+  let success: boolean
 
-  try {
-    let response: AuthResponse
+  if (isLogin.value) {
+    success = await authStore.login({
+      email: form.value.email,
+      password: form.value.password,
+    })
+  } else {
+    success = await authStore.register({
+      email: form.value.email,
+      password: form.value.password,
+      name: form.value.name,
+    })
+  }
 
-    if (isLogin.value) {
-      response = await api.post<AuthResponse>('/auth/login', {
-        email: form.value.email,
-        password: form.value.password,
-      })
-    } else {
-      response = await api.post<AuthResponse>('/auth/register', {
-        email: form.value.email,
-        password: form.value.password,
-        name: form.value.name,
-      })
-    }
-
-    // 保存 token 到 localStorage
-    localStorage.setItem('accessToken', response.accessToken)
-    localStorage.setItem('refreshToken', response.refreshToken)
-
-    // 获取当前用户信息
-    user.value = jwtUtils.getCurrentUser()
-
+  if (success) {
     // 重置表单
     form.value = { email: '', password: '', name: '' }
-  } catch (e: any) {
-    error.value = handleApiError(e).message
-  } finally {
-    loading.value = false
   }
 }
 
 const toggleMode = () => {
   isLogin.value = !isLogin.value
-  error.value = ''
+  authStore.clearError()
   form.value = { email: '', password: '', name: '' }
 }
 
 const logout = async () => {
-  try {
-    const refreshToken = localStorage.getItem('refreshToken')
-    if (refreshToken) {
-      await api.post('/auth/logout', { refreshToken })
-    }
-  } catch (e) {
-    console.error('Logout error:', e)
-  } finally {
-    localStorage.removeItem('accessToken')
-    localStorage.removeItem('refreshToken')
-    user.value = null
-  }
+  await authStore.logout()
 }
 
 onMounted(() => {
-  // 检查是否已登录
-  user.value = jwtUtils.getCurrentUser()
+  // 初始化认证状态
+  authStore.init()
 })
 </script>

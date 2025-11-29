@@ -6,6 +6,10 @@
     "strict": true,
     "resolveJsonModule": true,
     "skipLibCheck": true,
-    "jsx": "preserve"
+    "jsx": "preserve",
+    "noEmit": false,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true
   }
 }

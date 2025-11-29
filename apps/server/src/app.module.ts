@@ -5,6 +5,8 @@ import { AppService } from './app.service'
 import { PrismaModule } from './prisma/prisma.module'
 import { UsersModule } from './users/users.module'
 import { AuthModule } from './auth/auth.module'
+import { RedisModule } from './redis/redis.module'
+import { CacheModule } from './cache/cache.module'
 import { validateEnvironment } from './config/environment'
 
 @Module({
@@ -14,6 +16,8 @@ import { validateEnvironment } from './config/environment'
       cache: true,
       validate: validateEnvironment,
     }),
+    RedisModule,
+    CacheModule,
     PrismaModule,
     AuthModule,
     UsersModule,

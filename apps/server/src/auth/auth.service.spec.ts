@@ -3,6 +3,7 @@ import { AuthService } from './auth.service'
 import { PrismaService } from '../prisma/prisma.service'
 import { JwtService } from '@nestjs/jwt'
 import { ConfigService } from '@nestjs/config'
+import { TokenBlacklistService } from './token-blacklist.service'
 import { UnauthorizedException, BadRequestException } from '../common/exceptions/business.exception'
 import type { LoginInput, RegisterInput } from '@shared-types'
 
@@ -11,6 +12,7 @@ describe('AuthService', () => {
   let prismaService: PrismaService
   let jwtService: JwtService
   let configService: ConfigService
+  let tokenBlacklistService: TokenBlacklistService
 
   beforeEach(() => {
     prismaService = {
@@ -34,7 +36,12 @@ describe('AuthService', () => {
       get: vi.fn(),
     } as any
 
-    authService = new AuthService(prismaService, jwtService, configService)
+    tokenBlacklistService = {
+      addToBlacklist: vi.fn(),
+      isBlacklisted: vi.fn(),
+    } as any
+
+    authService = new AuthService(prismaService, jwtService, configService, tokenBlacklistService)
   })
 
   describe('validateUser', () => {

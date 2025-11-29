@@ -5,53 +5,44 @@ import 'dotenv/config'
 import { ValidationPipe, Logger } from '@nestjs/common'
 import { HttpExceptionFilter } from './common/filters/http-exception.filter'
 import { BusinessExceptionFilter } from './common/filters/business-exception.filter'
+import { GlobalExceptionFilter } from './common/filters/global-exception.filter'
 import { ConfigService } from '@nestjs/config'
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger'
 import { NodeEnvironment } from './config/environment'
-import type { Request, Response, NextFunction } from 'express'
+import cookieParser from 'cookie-parser'
+import helmet from 'helmet'
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule)
 
-  // 配置更严格的 CORS 策略
-  app.enableCors({
-    origin: (origin: string | undefined, callback: (err: Error | null, allow: boolean) => void) => {
-      const configService = app.get(ConfigService)
-      const environment =
-        configService.get<NodeEnvironment>('NODE_ENV') ?? NodeEnvironment.Development
+  // 启用 cookie parser
+  app.use(cookieParser())
 
-      // 允许的域名列表
-      const allowedOrigins = [
-        'http://localhost:5173',
-        'http://localhost:3000',
-        'http://localhost:8080',
-      ]
-
-      // 生产环境下应该有更严格的域名控制
-      if (environment === NodeEnvironment.Production) {
-        const productionOrigins = configService.get<string[]>('CORS_ORIGINS') || []
-        allowedOrigins.push(...productionOrigins)
-      }
-
-      // 允许没有 origin 的请求（如移动应用、Postman 等）
-      if (!origin) return callback(null, true)
-
-      if (allowedOrigins.includes(origin)) {
-        callback(null, true)
-      } else {
-        callback(new Error('Not allowed by CORS'), false)
-      }
-    },
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-  })
-
-  app.useGlobalPipes(new ValidationPipe({ whitelist: true }))
-  app.useGlobalFilters(new HttpExceptionFilter(), new BusinessExceptionFilter())
-
+  // 配置 CORS 策略
   const configService = app.get(ConfigService)
   const environment = configService.get<NodeEnvironment>('NODE_ENV') ?? NodeEnvironment.Development
+
+  if (environment === NodeEnvironment.Production) {
+    // 生产环境：只允许配置的域名
+    const allowedOrigins = configService.get<string[]>('CORS_ORIGINS') || []
+    app.enableCors({
+      origin: allowedOrigins,
+      credentials: true,
+    })
+  } else {
+    // 开发和测试环境：允许所有本地域名
+    app.enableCors({
+      origin: true,
+      credentials: true,
+    })
+  }
+
+  app.useGlobalPipes(new ValidationPipe({ whitelist: true }))
+  app.useGlobalFilters(
+    new GlobalExceptionFilter(),
+    new HttpExceptionFilter(),
+    new BusinessExceptionFilter()
+  )
 
   const swaggerConfig = new DocumentBuilder()
     .setTitle('Nest + Vue Template API')
@@ -62,14 +53,20 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, swaggerConfig)
   SwaggerModule.setup('docs', app, document)
 
-  // 添加安全头
-  app.use((req: Request, res: Response, next: NextFunction) => {
-    res.setHeader('X-Content-Type-Options', 'nosniff')
-    res.setHeader('X-Frame-Options', 'DENY')
-    res.setHeader('X-XSS-Protection', '1; mode=block')
-    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin')
-    next()
-  })
+  // 使用 helmet 中间件添加安全头，配置更宽松的 CSP
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          styleSrc: ["'self'", "'unsafe-inline'"],
+          scriptSrc: ["'self'"],
+          imgSrc: ["'self'", 'data:', 'https:'],
+        },
+      },
+      crossOriginEmbedderPolicy: false,
+    })
+  )
 
   const port = configService.get<number>('PORT') ?? 3001
   await app.listen(port)
