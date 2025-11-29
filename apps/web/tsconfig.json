@@ -4,6 +4,7 @@
     "jsx": "preserve",
     "skipLibCheck": true,
     "resolveJsonModule": true,
+    "moduleResolution": "bundler",
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"],
