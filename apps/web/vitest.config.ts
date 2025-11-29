@@ -1,16 +1,29 @@
-import { fileURLToPath, URL } from 'node:url'
-import vue from '@vitejs/plugin-vue'
+import { defineConfig } from 'vitest/config'
 
-import { withVitestBaseConfig } from '../../packages/vitest-config/base'
-
-export default withVitestBaseConfig({
-  plugins: [vue()],
-  resolve: {
-    alias: {
-      '@': fileURLToPath(new URL('./src', import.meta.url)),
-    },
-  },
+export default defineConfig({
   test: {
+    globals: true,
     environment: 'jsdom',
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json', 'html'],
+      reportsDirectory: './coverage',
+      exclude: [
+        'node_modules/**',
+        'coverage/**',
+        'dist/**',
+        '**/*.d.ts',
+        '**/*.spec.ts',
+        '**/*.test.ts',
+      ],
+      thresholds: {
+        global: {
+          branches: 80,
+          functions: 80,
+          lines: 80,
+          statements: 80,
+        },
+      },
+    },
   },
 })

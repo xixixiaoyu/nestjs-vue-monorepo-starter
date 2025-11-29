@@ -1,6 +1,6 @@
 import { plainToInstance } from 'class-transformer'
 import type { ValidationError } from 'class-validator'
-import { IsEnum, IsNumber, IsOptional, IsString, validateSync } from 'class-validator'
+import { IsEnum, IsNumber, IsOptional, IsString, IsArray, validateSync } from 'class-validator'
 
 export enum NodeEnvironment {
   Development = 'development',
@@ -20,6 +20,19 @@ class EnvironmentVariables {
   @IsString()
   @IsOptional()
   DATABASE_URL?: string
+
+  @IsString()
+  @IsOptional()
+  JWT_SECRET?: string
+
+  @IsString()
+  @IsOptional()
+  JWT_EXPIRES_IN?: string
+
+  @IsString()
+  @IsOptional()
+  @IsArray()
+  CORS_ORIGINS?: string[]
 }
 
 export const validateEnvironment = (config: Record<string, unknown>) => {
