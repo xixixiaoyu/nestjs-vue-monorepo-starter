@@ -21,10 +21,14 @@
   },
   "scripts": {
     "dev": "turbo run dev",
+    "dev:web": "turbo run dev --filter=@web",
+    "dev:server": "turbo run dev --filter=@server",
     "build": "turbo run build",
     "typecheck": "turbo run typecheck",
     "lint": "turbo run lint",
+    "lint:fix": "turbo run lint -- --fix",
     "lint:root": "eslint . --ext .ts,.tsx,.js,.vue -c packages/eslint-config-custom/index.js",
+    "check:prepush": "pnpm lint:fix && pnpm lint",
     "test": "echo \"no tests yet\"",
     "prepare": "husky install"
   },
