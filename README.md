@@ -1,132 +1,153 @@
-# NestJS Vue Monorepo Starter 🚀
+# Nest + Vue Monorepo Template
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![Powered by: Turborepo](https://img.shields.io/badge/Powered%20by-Turborepo-orange)](https://turbo.build/)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
+一个采用 Turborepo 的 **NestJS + Vue 3** 单仓库模板，内置 TypeScript、ESLint、Husky、Commitlint 等工程化工具。前端采用 **Shadcn-vue** 风格组件与 **Tailwind CSS**，后端采用 **NestJS + Prisma**。
 
-一个功能齐全、遵循最佳实践的全栈 Monorepo 项目模板，使用 NestJS, Vue 3, Prisma, Turborepo 和 pnpm 构建。
+## 目录结构
+- `apps/web`：Vue 3 + Vite，使用 Shadcn-vue 风格组件与 Tailwind
+- `apps/server`：NestJS + Prisma + PostgreSQL（可切换到其他数据库）
+- `packages/eslint-config-custom`：统一 ESLint 配置
+- `packages/shared-types` / `packages/types`：共享类型定义
+- `packages/tsconfig`：统一 tsconfig 基座
 
----
+## 技术栈
+- 前端：`Vue 3`、`Vite`、`Tailwind CSS`、`radix-vue`、`lucide-vue-next`、`class-variance-authority`、`clsx`、`tailwind-merge`
+- 组件：`shadcn-vue` CLI 生成组件骨架，样式走 Tailwind 原子类
+- 后端：`NestJS`、`Prisma`、`@nestjs/config`、`class-validator`
+- 工程：`pnpm`、`Turborepo`、`ESLint`、`Prettier`、`Husky`、`Commitlint`
 
-## ✨ 特性
-
-- 📦 **Monorepo 架构**: 使用 `pnpm` 和 `Turborepo` 管理，实现极致的开发效率和依赖管理。
-- 🔧 **统一的工具链**: ESLint, Prettier, TypeScript 配置共享，保证代码质量和风格一致。
-- 🤝 **类型安全的全栈体验**: 在 `packages/shared-types` 中定义 DTOs，实现前后端类型共享，告别联调噩梦。
-- 🚀 **现代前端**: Vue 3 + Vite + TypeScript + Pinia + Tailwind CSS，享受极致的开发体验。
-- 📡 **强大的后端**: NestJS + Express + Prisma，兼具开发效率、性能和类型安全。
-- ⚡️ **增量构建与缓存**: Turborepo 带来了极速的构建和 CI/CD 体验。
-- 📝 **代码规范**: 内置 Husky, lint-staged, commitlint，从源头保证代码库的整洁。
-
-## 🛠️ 技术栈
-
-| 领域       | 技术                                                              |
-| :--------- | :---------------------------------------------------------------- |
-| **Monorepo** | `pnpm`, `Turborepo`                                               |
-| **后端**     | `NestJS`, `Express`, `Prisma`, `PostgreSQL`                       |
-| **前端**     | `Vue 3`, `Vite`, `TypeScript`, `Pinia`, `Element Plus`, `Tailwind CSS` |
-| **共享**     | `shared-types` (DTOs), `eslint-config-custom`, `tsconfig`         |
-| **测试**     | `Vitest`                                                          |
-
-## 📂 目录结构
-
-```
-├── apps/
-│   ├── web/          # Vue 3 前端应用
-│   └── server/       # NestJS 后端应用
-├── packages/
-│   ├── shared-types/ # 前后端共享类型
-│   ├── eslint-config-custom/ # 共享 ESLint 配置
-│   └── tsconfig/     # 共享 tsconfig 配置
-├── pnpm-workspace.yaml
-└── turbo.json
-```
-
-## 🚀 快速开始
-
-### 1. 环境准备
-
-- [Node.js](https://nodejs.org/) (v18+ recommended)
-- [pnpm](https://pnpm.io/) (v8+)
-- [PostgreSQL](https://www.postgresql.org/) 数据库
-
-### 2. 克隆项目
-
-```bash
-git clone https://github.com/your-username/nestjs-vue-monorepo-starter.git
-cd nestjs-vue-monorepo-starter
-```
-
-### 3. 安装依赖
+## 快速开始
+1) 安装依赖
 
 ```bash
 pnpm install
 ```
 
-### 4. 配置环境变量
-
-复制 `.env.example` 文件为 `.env`，并填入你的数据库连接信息。
+2) 启动数据库（可选）
 
 ```bash
-# /apps/server/.env
-DATABASE_URL="postgresql://USER:PASSWORD@HOST:PORT/DATABASE?schema=public"
+docker compose up -d
 ```
 
-### 5. 数据库迁移
-
-使用 Prisma 来同步数据库结构。
+3) 生成 Prisma Client（如使用数据库）
 
 ```bash
-# 进入后端应用目录
-cd apps/server
-
-# 生成 Prisma Client
-pnpm prisma generate
-
-# 将 schema 推送到数据库
-pnpm prisma db push
+pnpm --filter @server prisma:generate
 ```
 
-### 6. 启动项目
-
-回到**根目录**，运行开发命令。
+4) 开发模式
 
 ```bash
-# 回到根目录
-cd ../..
-
-# 启动所有应用 (前端 + 后端)
-pnpm dev
+pnpm run dev
 ```
 
-- 前端应用将在 `http://localhost:5173` 运行。
-- 后端服务将在 `http://localhost:3000` 运行。
-- 后端 API 文档 (Swagger) 在 `http://localhost:3000/api`。
+- 前端：`http://localhost:5173/`
+- 后端：`http://localhost:3001/`
 
-## 📜 可用命令
+5) 构建与校验
 
-所有命令都应在**项目根目录**下运行。
-
-- `pnpm dev`: 启动所有应用的开发模式。
-- `pnpm build`: 构建所有应用和包。
-- `pnpm lint`: 检查所有代码。
-- `pnpm test`: 运行所有测试。
-
-## 🤝 贡献
-
-欢迎提交 PRs！请在提交前确保代码通过 lint 和 test 检查。
-
-## 📄 开源协议
-
-本项目基于 [MIT License](LICENSE) 开源。
+```bash
+pnpm run typecheck
+pnpm run build
+pnpm run lint
 ```
 
-### README 写作建议
+## 前端说明（apps/web）
+- 入口：`src/main.ts`
+- 全局样式与主题变量：`src/assets/main.css`
+- 组件目录：`src/components/ui/`
+- 组件聚合导出：`src/components/ui/index.ts`
+- 工具方法：`src/lib/utils.ts`（`cn` 合并类名、`valueUpdater` 更新 ref 值）
+- Tailwind 配置：`tailwind.config.js`（包含 `tailwindcss-animate`）
+- Shadcn-vue 配置：`components.json`
 
-*   **使用 Badges**: 开头的徽章能快速展示项目状态，显得很专业。
-*   **清晰的特性列表**: 用 emoji 突出重点，让读者一眼就能看到项目的亮点。
-*   **技术栈表格**: 直观地展示你用了什么。
-*   **“快速开始”是核心**: 这一部分必须是**可复制、可执行**的，确保新人能用最少的步骤把项目跑起来。
-*   **提供核心命令**: 告诉用户如何开发、构建、测试。
+### Shadcn-vue 组件使用
+- 通过 CLI 添加组件（在 `apps/web` 下执行）：
 
-遵循这个结构，你的 README 将会非常专业和受欢迎。
+```bash
+pnpm dlx shadcn-vue@latest init -y
+pnpm dlx shadcn-vue@latest add button card input alert -y -p src/components/ui
+pnpm dlx shadcn-vue@latest add dialog dropdown-menu tabs toast textarea select badge avatar skeleton switch toggle tooltip separator -y -p src/components/ui
+```
+
+- 导入方式（聚合导出）：
+
+```ts
+import { Button, Card, Input, Alert } from '@/components/ui'
+```
+
+### 风格与主题
+- 使用 `components.json` 的 `style: new-york` 与 `baseColor: neutral`
+- 所有颜色通过 `:root` CSS 变量定义（`src/assets/main.css`），支持 `.dark` 暗色模式
+
+## 后端说明（apps/server）
+- 入口：`src/main.ts`
+- 模块：`src/app.module.ts`
+- 健康检查：`src/app.controller.ts` / `src/app.service.ts`
+- 用户模块：`src/users/*`
+- Prisma：
+  - 数据模型：`prisma/schema.prisma`
+  - 服务：`src/prisma/prisma.service.ts`
+- 环境变量样例：`.env.example`
+
+## 脚本（根目录）
+- `dev`：`turbo run dev`
+- `build`：`turbo run build`
+- `typecheck`：`turbo run typecheck`
+- `lint`：`turbo run lint`
+- `lint:root`：在根运行 ESLint（使用共享配置）
+- `prepare`：安装 Husky 钩子
+
+## 代码风格约定
+- JS / TS：单引号、无分号、两空格缩进
+- 引入路径使用别名：`@/components`、`@/lib`、`@/components/ui`
+- 前端变更需执行：`pnpm --filter @web run typecheck && pnpm --filter @web run build`
+- 后端变更需执行：`pnpm --filter @server run build`
+
+## 常见问题
+- 大小写文件名冲突：在 `macOS` 下需避免同目录同时存在大小写不同的文件名（TypeScript 会报 `TS1261`）。
+- Shadcn-vue 导出缺失：如果 `src/components/ui/index.ts` 未导出新组件所需的 `variants` 或 `types`，需补全或使用 CLI 重新生成。
+
+## 面向大模型的系统前置提示词（复制即用）
+
+> 使用此仓库时，请严格遵守以下前置规则，以保障一致性与工程质量。
+
+```
+角色：你是一个资深的、自治的双人编程伙伴，默认使用中文回复。
+
+通用约定：
+- 严格遵守仓库既有风格与架构，不随意引入新库。
+- JS / TS 代码：使用单引号、无分号、两空格缩进。
+- 路径引用使用别名：`@/components`、`@/lib`、`@/components/ui`。
+- 修改代码后必须验证：
+  - 前端：运行 `pnpm --filter @web run typecheck && pnpm --filter @web run build`
+  - 后端：运行 `pnpm --filter @server run build`
+- 只有在用户明确要求时才创建文档文件；否则优先编辑现有文件。
+- 不要引入或暴露任何密钥、令牌或敏感信息。
+
+工作流：
+- 对请求保持强行动力：收到指令后直接分析、实现、验证，给出完整结果。
+- 使用 Turborepo 脚本：在根目录执行 `pnpm run dev/build/typecheck/lint`。
+- 前端组件：使用 `shadcn-vue` CLI 在 `apps/web` 添加或更新组件，生成到 `src/components/ui`。
+- 组件导出入口统一维护在 `src/components/ui/index.ts`，缺失的 `variants/types` 需要补齐。
+
+输出与风格：
+- 所有路径/命令/标识用反引号包裹，例如：`apps/web/src/App.vue`、`pnpm run dev`。
+- 引用代码位置时使用 `file_path:line_number` 格式，例如：`apps/web/src/lib/utils.ts:7`。
+- 不在代码中添加注释（除非用户要求）；解释放在文本中。
+- 保持表达精炼自然、深入本质；中文与英文/数字间加入空格。
+
+测试与预览：
+- Web 项目优先通过构建验证；必要时添加最小化单元测试。
+- 开发预览通过本地 `pnpm run dev`，前端 `http://localhost:5173/`。
+```
+
+## 贡献指南
+- 分支策略与提交规范遵循 `Commitlint` 约定式提交。
+- 新增包或子应用时，遵守 `packages/tsconfig` 与 `packages/eslint-config-custom` 的约束。
+
+## 变更记录
+- 近期：
+  - 前端组件库迁移到 Shadcn-vue 风格，统一聚合导出与 variants。
+  - Tailwind 加入 `tailwindcss-animate`，暗色与主题变量完善。
+  - 根脚本补充 `lint:root`，统一工程化体验。
+
