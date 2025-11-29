@@ -5,11 +5,14 @@
     "skipLibCheck": true,
     "resolveJsonModule": true,
     "moduleResolution": "bundler",
+    "allowImportingTsExtensions": false,
+    "moduleDetection": "force",
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"],
       "@shared-types": ["../../packages/shared-types/src/index.ts"]
-    }
+    },
+    "types": ["vite/client", "vitest/globals"]
   },
-  "include": ["src", "env.d.ts"]
+  "include": ["src", "env.d.ts", "vitest.config.ts"]
 }

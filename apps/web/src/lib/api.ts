@@ -45,7 +45,7 @@ const createApiInstance = (): AxiosInstance => {
         try {
           // 尝试使用刷新令牌获取新的访问令牌
           const response = await axios.post(
-            '/api/auth/refresh',
+            `${import.meta.env.VITE_API_BASE_URL || '/api'}/auth/refresh`,
             {},
             {
               withCredentials: true, // 发送 Cookie
