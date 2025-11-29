@@ -47,9 +47,12 @@ pnpm run dev
 
 ```bash
 pnpm run typecheck
-pnpm run build
 pnpm run lint
+pnpm run test
+pnpm run build
 ```
+
+> CI：`main` 分支启用了 GitHub Actions，自动执行 **lint → test → build**，模板使用者只需保持脚本可通过即可。
 
 ## 前端说明（apps/web）
 - 入口：`src/main.ts`
@@ -59,6 +62,7 @@ pnpm run lint
 - 工具方法：`src/lib/utils.ts`（`cn` 合并类名、`valueUpdater` 更新 ref 值）
 - Tailwind 配置：`tailwind.config.js`（包含 `tailwindcss-animate`）
 - Shadcn-vue 配置：`components.json`
+- 环境变量样例：`.env.example`（`VITE_API_BASE_URL` 指向后端 `api` 前缀）
 
 ### Shadcn-vue 组件使用
 - 通过 CLI 添加组件（在 `apps/web` 下执行）：
@@ -87,15 +91,23 @@ import { Button, Card, Input, Alert } from '@/components/ui'
 - Prisma：
   - 数据模型：`prisma/schema.prisma`
   - 服务：`src/prisma/prisma.service.ts`
-- 环境变量样例：`.env.example`
+- 环境变量样例：`.env.example`（`PORT`、`DATABASE_URL`）
+- Swagger：运行服务后访问 `http://localhost:3001/docs`
+- 启动脚本会通过 `ConfigService` 获取环境配置，确保本地与生产一致。
+
+### Swagger / OpenAPI
+- 主入口 `src/main.ts` 默认挂载 Swagger UI，并基于装饰器生成 schema。
+- 如需禁用，可根据部署环境以条件判断控制 `SwaggerModule.setup`。
 
 ## 脚本（根目录）
 - `dev`：`turbo run dev`
 - `build`：`turbo run build`
 - `typecheck`：`turbo run typecheck`
 - `lint`：`turbo run lint`
+- `test`：`turbo run test`
 - `lint:root`：在根运行 ESLint（使用共享配置）
 - `prepare`：安装 Husky 钩子
+- `ci`：GitHub Actions `ci.yml`（push/pull request 自动跑 `lint → test → build`）
 
 ## 代码风格约定
 - JS / TS：单引号、无分号、两空格缩进
@@ -109,6 +121,7 @@ import { Button, Card, Input, Alert } from '@/components/ui'
 
 ## 贡献指南
 - 分支策略与提交规范遵循 `Commitlint` 约定式提交。
+- Husky 钩子会在提交时检查 commit message（`.husky/commit-msg` + `commitlint.config.js`）。
 - 新增包或子应用时，遵守 `packages/tsconfig` 与 `packages/eslint-config-custom` 的约束。
 
 ## 变更记录

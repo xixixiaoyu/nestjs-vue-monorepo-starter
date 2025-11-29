@@ -28,7 +28,7 @@
     "typecheck": "turbo run typecheck",
     "lint": "turbo run lint",
     "lint:fix": "turbo run lint -- --fix",
-    "test": "echo \"no tests yet\"",
+    "test": "turbo run test",
     "prepare": "husky install"
   },
   "lint-staged": {
