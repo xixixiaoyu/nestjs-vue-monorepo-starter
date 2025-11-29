@@ -1,15 +1,5 @@
 {
-  "compilerOptions": {
-    "target": "ES2020",
-    "module": "ESNext",
-    "moduleResolution": "Node",
-    "strict": true,
-    "resolveJsonModule": true,
-    "skipLibCheck": true,
-    "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
-    "forceConsistentCasingInFileNames": true
-  },
+  "extends": "./packages/tsconfig/base.json",
   "include": ["*.js", "*.ts", "*.json"],
   "exclude": ["node_modules", "dist", "apps", "packages"]
 }

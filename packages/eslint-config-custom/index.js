@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-var-requires */
 const js = require('@eslint/js')
 const globals = require('globals')
 const tsParser = require('@typescript-eslint/parser')
@@ -44,25 +43,20 @@ module.exports = [
       'unused-imports': unusedImports,
     },
     rules: {
-      ...js.configs.recommended.rules,
-      ...tsPlugin.configs.recommended.rules,
+      ...(js.configs?.recommended?.rules || {}),
+      ...(tsPlugin.configs?.recommended?.rules || {}),
       'no-console': 'warn',
       'no-debugger': 'warn',
       'unused-imports/no-unused-imports': 'error',
       '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-require-imports': 'off',
       '@typescript-eslint/no-unused-vars': [
         'error',
         { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
       ],
       'import/order': 'off',
       quotes: ['error', 'single', { avoidEscape: true, allowTemplateLiterals: true }],
-      '@typescript-eslint/quotes': [
-        'error',
-        'single',
-        { avoidEscape: true, allowTemplateLiterals: true },
-      ],
       semi: ['error', 'never'],
-      '@typescript-eslint/semi': ['error', 'never'],
     },
   },
   {
@@ -83,19 +77,14 @@ module.exports = [
       '@typescript-eslint': tsPlugin,
     },
     rules: {
-      ...vue.configs['vue3-recommended'].rules,
-      ...tsPlugin.configs.recommended.rules,
+      ...(vue.configs['vue3-recommended']?.rules || {}),
+      ...(tsPlugin.configs?.recommended?.rules || {}),
       'vue/multi-word-component-names': 'off',
       'vue/require-default-prop': 'off',
       '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-require-imports': 'off',
       quotes: ['error', 'single', { avoidEscape: true, allowTemplateLiterals: true }],
-      '@typescript-eslint/quotes': [
-        'error',
-        'single',
-        { avoidEscape: true, allowTemplateLiterals: true },
-      ],
       semi: ['error', 'never'],
-      '@typescript-eslint/semi': ['error', 'never'],
     },
   },
   {

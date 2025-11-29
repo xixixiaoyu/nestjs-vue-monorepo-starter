@@ -79,7 +79,7 @@ export const validateEnvironment = (config: Record<string, unknown>) => {
     enableImplicitConversion: true,
   })
 
-  const errors: ValidationError[] = validateSync(validated, {
+  const errors = validateSync(validated, {
     skipMissingProperties: false,
     whitelist: true,
   })
@@ -90,6 +90,7 @@ export const validateEnvironment = (config: Record<string, unknown>) => {
       .filter(Boolean)
       .join('; ')
 
+    // eslint-disable-next-line no-console
     console.warn('Environment validation warnings:', message || 'Invalid environment configuration')
     // 不要抛出错误，只记录警告
   }

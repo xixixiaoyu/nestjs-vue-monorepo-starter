@@ -35,7 +35,7 @@ const createApiInstance = (): AxiosInstance => {
     (response: AxiosResponse) => {
       return response
     },
-    async (error) => {
+    async (error: any) => {
       const originalRequest = error.config
 
       // 处理 401 错误 - 尝试刷新 token
