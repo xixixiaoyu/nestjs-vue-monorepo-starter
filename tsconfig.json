@@ -5,6 +5,11 @@
     "moduleResolution": "Node",
     "strict": true,
     "resolveJsonModule": true,
-    "skipLibCheck": true
-  }
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true
+  },
+  "include": ["*.js", "*.ts", "*.json"],
+  "exclude": ["node_modules", "dist", "apps", "packages"]
 }

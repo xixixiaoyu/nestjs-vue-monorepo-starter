@@ -1,20 +1,28 @@
 {
-  "tasks": {
+  "pipeline": {
     "dev": {
-      "cache": false
+      "cache": false,
+      "persistent": true
     },
     "build": {
       "dependsOn": ["^build"],
-      "outputs": ["dist/**"]
+      "outputs": ["dist/**", ".next/**", "!.next/cache/**"]
     },
     "lint": {
-      "dependsOn": ["^lint"]
+      "dependsOn": ["^lint"],
+      "outputs": []
     },
     "test": {
-      "dependsOn": ["^test"]
+      "dependsOn": ["^build"],
+      "outputs": ["coverage/**"]
     },
     "typecheck": {
-      "dependsOn": ["^typecheck"]
+      "dependsOn": ["^build"],
+      "outputs": []
+    },
+    "clean": {
+      "cache": false
     }
-  }
+  },
+  "globalEnv": ["NODE_ENV", "DATABASE_URL", "REDIS_URL", "VITE_API_BASE_URL"]
 }

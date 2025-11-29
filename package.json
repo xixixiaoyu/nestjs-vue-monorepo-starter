@@ -28,9 +28,18 @@
     "typecheck": "turbo run typecheck",
     "lint": "turbo run lint",
     "lint:fix": "turbo run lint -- --fix",
+    "lint:root": "eslint --ext .ts,.js,.vue .",
     "format": "prettier --cache --write .",
+    "format:check": "prettier --cache --check .",
     "test": "turbo run test",
-    "prepare": "husky install"
+    "test:coverage": "turbo run test:coverage",
+    "clean": "turbo run clean",
+    "clean:all": "rm -rf node_modules .turbo dist apps/*/dist apps/*/.vite packages/*/dist && pnpm install",
+    "prepare": "husky install",
+    "db:generate": "pnpm --filter @server prisma:generate",
+    "db:push": "pnpm --filter @server prisma:push",
+    "db:migrate": "pnpm --filter @server prisma:migrate",
+    "db:studio": "pnpm --filter @server prisma:studio"
   },
   "lint-staged": {
     "*.{ts,tsx,js,vue}": [
