@@ -37,5 +37,6 @@
       "eslint --fix --config .eslintrc.js",
       "prettier --write"
     ]
-  }
+  },
+  "prettier": "./prettier.config.cjs"
 }

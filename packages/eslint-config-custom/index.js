@@ -55,6 +55,14 @@ module.exports = [
         { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
       ],
       'import/order': 'off',
+      quotes: ['error', 'single', { avoidEscape: true, allowTemplateLiterals: true }],
+      '@typescript-eslint/quotes': [
+        'error',
+        'single',
+        { avoidEscape: true, allowTemplateLiterals: true },
+      ],
+      semi: ['error', 'never'],
+      '@typescript-eslint/semi': ['error', 'never'],
     },
   },
   {
@@ -80,6 +88,14 @@ module.exports = [
       'vue/multi-word-component-names': 'off',
       'vue/require-default-prop': 'off',
       '@typescript-eslint/no-explicit-any': 'off',
+      quotes: ['error', 'single', { avoidEscape: true, allowTemplateLiterals: true }],
+      '@typescript-eslint/quotes': [
+        'error',
+        'single',
+        { avoidEscape: true, allowTemplateLiterals: true },
+      ],
+      semi: ['error', 'never'],
+      '@typescript-eslint/semi': ['error', 'never'],
     },
   },
   {
