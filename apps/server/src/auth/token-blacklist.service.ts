@@ -1,9 +1,10 @@
 import { Injectable, Inject } from '@nestjs/common'
 import Redis from 'ioredis'
+import { REDIS } from '../redis/redis.module'
 
 @Injectable()
 export class TokenBlacklistService {
-  constructor(@Inject('REDIS') private redis: Redis) {}
+  constructor(@Inject(REDIS) private redis: Redis) {}
 
   async addToBlacklist(token: string, expiresIn: number): Promise<void> {
     await this.redis.setex(`blacklist:${token}`, expiresIn, '1')

@@ -40,9 +40,9 @@ class EnvironmentVariables {
   @IsOptional()
   JWT_EXPIRES_IN?: string
 
-  @IsString()
-  @IsOptional()
   @IsArray()
+  @IsOptional()
+  @IsString({ each: true })
   CORS_ORIGINS?: string[]
 
   @IsString()
@@ -68,6 +68,11 @@ export const validateEnvironment = (config: Record<string, unknown>) => {
   // 确保 REDIS_PORT 是数字类型
   if (config.REDIS_PORT !== undefined) {
     config.REDIS_PORT = Number(config.REDIS_PORT)
+  }
+
+  // 处理 CORS_ORIGINS 字符串数组
+  if (config.CORS_ORIGINS !== undefined && typeof config.CORS_ORIGINS === 'string') {
+    config.CORS_ORIGINS = (config.CORS_ORIGINS as string).split(',').map((origin) => origin.trim())
   }
 
   const validated = plainToInstance(EnvironmentVariables, config, {

@@ -1,11 +1,12 @@
 import { Injectable, Inject, Logger } from '@nestjs/common'
 import Redis from 'ioredis'
+import { REDIS } from '../redis/redis.module'
 
 @Injectable()
 export class CacheService {
   private readonly logger = new Logger(CacheService.name)
 
-  constructor(@Inject('REDIS') private redis: Redis) {}
+  constructor(@Inject(REDIS) private redis: Redis) {}
 
   // 获取缓存
   async get<T>(key: string): Promise<T | null> {

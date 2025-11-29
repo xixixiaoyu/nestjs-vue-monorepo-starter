@@ -15,10 +15,15 @@ export const REDIS = 'REDIS'
         const redisPort = configService.get<number>('REDIS_PORT', 6379)
         const redisPassword = configService.get<string>('REDIS_PASSWORD')
 
-        // 如果没有配置 Redis，返回 null 以避免连接错误
+        // 如果没有配置 Redis，创建一个模拟的 Redis 客户端
         if (!redisHost) {
-          logger.log('Redis not configured, skipping Redis connection')
-          return null
+          logger.log('Redis not configured, using mock Redis client')
+          return new Redis({
+            host: 'localhost',
+            port: 6379,
+            lazyConnect: true,
+            maxRetriesPerRequest: 0,
+          })
         }
 
         const redis = new Redis({

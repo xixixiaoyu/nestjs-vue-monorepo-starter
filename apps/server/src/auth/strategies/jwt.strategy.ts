@@ -8,7 +8,7 @@ import type { JwtPayload } from '@shared-types'
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(
-    configService: ConfigService,
+    @Inject(ConfigService) private configService: ConfigService,
     @Inject(TokenBlacklistService) private tokenBlacklistService: TokenBlacklistService
   ) {
     super({
