@@ -10,6 +10,7 @@ import { UsersModule } from './users/users.module'
 import { CacheModule } from './cache/cache.module'
 import { RedisModule } from './redis/redis.module'
 import { EmailModule } from './email/email.module'
+import { CustomWinstonModule } from './winston/winston.module'
 
 @Module({
   imports: [
@@ -29,6 +30,8 @@ import { EmailModule } from './email/email.module'
         },
       }),
     }),
+    // Winston 日志模块
+    CustomWinstonModule,
     PrismaModule,
     RedisModule,
     CacheModule,
