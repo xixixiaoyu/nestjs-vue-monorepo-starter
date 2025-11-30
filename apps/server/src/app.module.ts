@@ -6,7 +6,7 @@ import { AppService } from './app.service'
 import { PrismaModule } from './prisma/prisma.module'
 import { validateEnvironment } from './config/environment'
 import { createPinoLogger } from './pino/pino.config'
-// import { EmailModule } from './email/email.module'
+import { EmailModule } from './email/email.module'
 
 @Module({
   imports: [
@@ -37,7 +37,7 @@ import { createPinoLogger } from './pino/pino.config'
     // CacheModule,
     // AuthModule,
     // UsersModule,
-    // EmailModule,
+    EmailModule,
   ],
   controllers: [AppController],
   providers: [AppService],

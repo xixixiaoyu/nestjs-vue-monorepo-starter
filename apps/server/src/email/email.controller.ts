@@ -1,13 +1,19 @@
 import { Controller, Post, Body, Get, HttpException, HttpStatus, Inject } from '@nestjs/common'
 import { EmailService } from './email.service'
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger'
+import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger'
+import { createZodDto } from 'nestjs-zod'
+import { z } from 'zod'
+import { ZodValidationPipe } from 'nestjs-zod'
 
-// 定义请求 DTO
-export class SendWelcomeEmailDto {
-  email!: string
-  name!: string
-  userId!: string
-}
+// 定义 Zod Schema
+const SendWelcomeEmailSchema = z.object({
+  email: z.string().email('请提供有效的邮箱地址'),
+  name: z.string().min(1, '姓名不能为空'),
+  userId: z.string().uuid('请提供有效的用户 ID'),
+})
+
+// 生成 DTO 类
+class SendWelcomeEmailDto extends createZodDto(SendWelcomeEmailSchema) {}
 
 @ApiTags('email')
 @Controller('email')
@@ -17,7 +23,23 @@ export class EmailController {
   @Post('send-welcome')
   @ApiOperation({ summary: '发送欢迎邮件' })
   @ApiResponse({ status: 200, description: '邮件任务已添加到队列' })
-  async sendWelcomeEmail(@Body() sendWelcomeEmailDto: SendWelcomeEmailDto) {
+  @ApiBody({
+    type: SendWelcomeEmailDto,
+    description: '发送欢迎邮件的请求参数',
+    examples: {
+      valid: {
+        summary: '有效的请求示例',
+        value: {
+          email: 'user@example.com',
+          name: 'John Doe',
+          userId: '123e4567-e89b-12d3-a456-426614174000',
+        },
+      },
+    },
+  })
+  async sendWelcomeEmail(
+    @Body(new ZodValidationPipe(SendWelcomeEmailSchema)) sendWelcomeEmailDto: SendWelcomeEmailDto
+  ) {
     try {
       const job = await this.emailService.addWelcomeEmailJob(
         sendWelcomeEmailDto.email,

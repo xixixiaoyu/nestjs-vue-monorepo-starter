@@ -82,7 +82,7 @@ async function bootstrap() {
   const port = configService.get<number>('PORT') ?? 3001
   await app.listen(port)
 
-  const logger = app.get(PinoLogger)
+  const logger = await app.resolve(PinoLogger)
   logger.setContext('Bootstrap')
   logger.info(`Server started on port ${port} in ${environment} mode`)
   logger.info(`Swagger documentation available at http://localhost:${port}/docs`)
