@@ -2,16 +2,18 @@ import 'reflect-metadata'
 import { NestFactory } from '@nestjs/core'
 import { AppModule } from './app.module'
 import 'dotenv/config'
-import { ValidationPipe } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger'
 import { NodeEnvironment } from './config/environment'
 import cookieParser from 'cookie-parser'
 import helmet from 'helmet'
-import { Logger } from '@nestjs/common'
+import { PinoLogger } from 'nestjs-pino'
+import { ZodValidationPipe } from 'nestjs-zod'
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule)
+  const app = await NestFactory.create(AppModule, {
+    bufferLogs: true,
+  })
 
   // 启用 cookie parser
   app.use(cookieParser())
@@ -35,7 +37,8 @@ async function bootstrap() {
     })
   }
 
-  app.useGlobalPipes(new ValidationPipe({ whitelist: true }))
+  // 使用 ZodValidationPipe 替换 ValidationPipe
+  app.useGlobalPipes(new ZodValidationPipe())
 
   // 导入并使用全局异常过滤器
   const { GlobalExceptionFilter } = await import('./common/filters/global-exception.filter')
@@ -79,9 +82,10 @@ async function bootstrap() {
   const port = configService.get<number>('PORT') ?? 3001
   await app.listen(port)
 
-  const logger = new Logger('Bootstrap')
-  logger.log(`Server started on port ${port} in ${environment} mode`)
-  logger.log(`Swagger documentation available at http://localhost:${port}/docs`)
+  const logger = app.get(PinoLogger)
+  logger.setContext('Bootstrap')
+  logger.info(`Server started on port ${port} in ${environment} mode`)
+  logger.info(`Swagger documentation available at http://localhost:${port}/docs`)
 }
 
 bootstrap()

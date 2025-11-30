@@ -1,9 +1,11 @@
 import { Module } from '@nestjs/common'
-import { ConfigModule } from '@nestjs/config'
+import { ConfigModule, ConfigService } from '@nestjs/config'
+import { LoggerModule } from 'nestjs-pino'
 import { AppController } from './app.controller'
 import { AppService } from './app.service'
 import { PrismaModule } from './prisma/prisma.module'
 import { validateEnvironment } from './config/environment'
+import { createPinoLogger } from './pino/pino.config'
 // import { EmailModule } from './email/email.module'
 
 @Module({
@@ -13,6 +15,11 @@ import { validateEnvironment } from './config/environment'
       cache: true,
       validate: validateEnvironment,
       envFilePath: '.env',
+    }),
+    // Pino 日志模块
+    LoggerModule.forRootAsync({
+      useFactory: createPinoLogger,
+      inject: [ConfigService],
     }),
     // BullMQ 全局配置，使用现有的 Redis 连接
     // BullModule.forRootAsync({
@@ -25,8 +32,6 @@ import { validateEnvironment } from './config/environment'
     //       },
     //     }) as any,
     // }),
-    // Winston 日志模块
-    // CustomWinstonModule,
     PrismaModule,
     // RedisModule,
     // CacheModule,

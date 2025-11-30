@@ -1,15 +1,14 @@
-import { Body, Controller, Get, Post, UsePipes, ValidationPipe } from '@nestjs/common'
+import { Body, Controller, Get, Post } from '@nestjs/common'
 import { UsersService } from './users.service'
-import { IsEmail, IsOptional, IsString } from 'class-validator'
+import { createZodDto } from 'nestjs-zod'
+import { z } from 'zod'
 
-class CreateUserDto {
-  @IsEmail()
-  email!: string
+const CreateUserSchema = z.object({
+  email: z.string().email(),
+  name: z.string().optional(),
+})
 
-  @IsString()
-  @IsOptional()
-  name?: string
-}
+class CreateUserDto extends createZodDto(CreateUserSchema) {}
 
 @Controller('api/users')
 export class UsersController {
@@ -21,7 +20,6 @@ export class UsersController {
   }
 
   @Post()
-  @UsePipes(new ValidationPipe({ whitelist: true }))
   async create(@Body() dto: CreateUserDto) {
     return this.users.create({ email: dto.email, name: dto.name })
   }

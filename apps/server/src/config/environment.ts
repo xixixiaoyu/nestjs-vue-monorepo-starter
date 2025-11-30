@@ -1,16 +1,4 @@
-import { plainToInstance } from 'class-transformer'
-import type { ValidationError } from 'class-validator'
-import {
-  IsEnum,
-  IsNumber,
-  IsOptional,
-  IsString,
-  IsArray,
-  IsBoolean,
-  validateSync,
-  Min,
-  Max,
-} from 'class-validator'
+import { z } from 'zod'
 
 export enum NodeEnvironment {
   Development = 'development',
@@ -18,75 +6,25 @@ export enum NodeEnvironment {
   Production = 'production',
 }
 
-class EnvironmentVariables {
-  @IsEnum(NodeEnvironment)
-  @IsOptional()
-  NODE_ENV?: NodeEnvironment
+const environmentVariablesSchema = z.object({
+  NODE_ENV: z.nativeEnum(NodeEnvironment).optional(),
+  PORT: z.coerce.number().min(1).max(65535).optional(),
+  DATABASE_URL: z.string().optional(),
+  JWT_SECRET: z.string().optional(),
+  JWT_EXPIRES_IN: z.string().optional(),
+  CORS_ORIGINS: z.array(z.string()).optional(),
+  REDIS_HOST: z.string().optional(),
+  REDIS_PORT: z.coerce.number().min(1).max(65535).optional(),
+  REDIS_PASSWORD: z.string().optional(),
+  APP_NAME: z.string().optional(),
+  APP_VERSION: z.string().optional(),
+  ENABLE_SWAGGER: z.coerce.boolean().optional(),
+  LOG_LEVEL: z.string().optional(),
+})
 
-  @IsNumber()
-  @IsOptional()
-  @Min(1)
-  @Max(65535)
-  PORT?: number
-
-  @IsString()
-  @IsOptional()
-  DATABASE_URL?: string
-
-  @IsString()
-  @IsOptional()
-  JWT_SECRET?: string
-
-  @IsString()
-  @IsOptional()
-  JWT_EXPIRES_IN?: string
-
-  @IsArray()
-  @IsOptional()
-  @IsString({ each: true })
-  CORS_ORIGINS?: string[]
-
-  @IsString()
-  @IsOptional()
-  REDIS_HOST?: string
-
-  @IsNumber()
-  @IsOptional()
-  @Min(1)
-  @Max(65535)
-  REDIS_PORT?: number
-
-  @IsString()
-  @IsOptional()
-  REDIS_PASSWORD?: string
-
-  @IsString()
-  @IsOptional()
-  APP_NAME?: string
-
-  @IsString()
-  @IsOptional()
-  APP_VERSION?: string
-
-  @IsBoolean()
-  @IsOptional()
-  ENABLE_SWAGGER?: boolean
-
-  @IsString()
-  @IsOptional()
-  LOG_LEVEL?: string
-}
+export type EnvironmentVariables = z.infer<typeof environmentVariablesSchema>
 
 export const validateEnvironment = (config: Record<string, unknown>) => {
-  // 确保 PORT 是数字类型
-  if (config.PORT !== undefined) {
-    config.PORT = Number(config.PORT)
-  }
-  // 确保 REDIS_PORT 是数字类型
-  if (config.REDIS_PORT !== undefined) {
-    config.REDIS_PORT = Number(config.REDIS_PORT)
-  }
-
   // 处理 CORS_ORIGINS 字符串数组
   if (config.CORS_ORIGINS !== undefined && typeof config.CORS_ORIGINS === 'string') {
     config.CORS_ORIGINS = (config.CORS_ORIGINS as string).split(',').map((origin) => origin.trim())
@@ -95,38 +33,28 @@ export const validateEnvironment = (config: Record<string, unknown>) => {
     config.CORS_ORIGINS = []
   }
 
-  // 处理布尔值环境变量
-  if (config.ENABLE_SWAGGER !== undefined) {
-    if (typeof config.ENABLE_SWAGGER === 'string') {
-      config.ENABLE_SWAGGER = config.ENABLE_SWAGGER.toLowerCase() === 'true'
-    }
-  }
-
   // 设置默认值
   config.APP_NAME = config.APP_NAME || 'Nest Vue Template'
   config.APP_VERSION = config.APP_VERSION || '1.0.0'
   config.JWT_EXPIRES_IN = config.JWT_EXPIRES_IN || '1h'
   config.LOG_LEVEL = config.LOG_LEVEL || 'info'
 
-  const validated = plainToInstance(EnvironmentVariables, config, {
-    enableImplicitConversion: true,
-  })
+  const result = environmentVariablesSchema.safeParse(config)
 
-  const errors = validateSync(validated, {
-    skipMissingProperties: false,
-    whitelist: true,
-  })
-
-  if (errors.length > 0) {
-    const message = errors
-      .map((error: ValidationError) => Object.values(error.constraints ?? {}).join(', '))
-      .filter(Boolean)
+  if (!result.success) {
+    const errorMessages = result.error.issues
+      .map((error: any) => {
+        return `${error.path.join('.')}: ${error.message}`
+      })
       .join('; ')
 
     // eslint-disable-next-line no-console
-    console.warn('Environment validation warnings:', message || 'Invalid environment configuration')
+    console.warn(
+      'Environment validation warnings:',
+      errorMessages || 'Invalid environment configuration'
+    )
     // 不要抛出错误，只记录警告
   }
 
-  return validated
+  return result.success ? result.data : (config as EnvironmentVariables)
 }

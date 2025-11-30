@@ -4,7 +4,10 @@ import { PrismaService } from '../prisma/prisma.service'
 import { JwtService } from '@nestjs/jwt'
 import { ConfigService } from '@nestjs/config'
 import { TokenBlacklistService } from './token-blacklist.service'
-import { UnauthorizedException, BadRequestException } from '../common/exceptions/business.exception'
+import {
+  BusinessUnauthorizedException as UnauthorizedException,
+  BusinessBadRequestException as BadRequestException,
+} from '../common/exceptions/business.exception'
 import type { LoginInput, RegisterInput } from '@shared-types'
 
 describe('AuthService', () => {
