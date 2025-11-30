@@ -8,7 +8,6 @@
     "build": "../../scripts/build-desktop.sh",
     "build:debug": "echo 'Building Wails application in debug mode...' && wails build -debug",
     "build:ci": "../../scripts/build-desktop.sh",
-    "generate-types": "node scripts/generate-types.js",
     "typecheck": "echo 'No TypeScript files to check'",
     "lint": "echo 'No linting configured for Go files'",
     "clean": "rm -rf build/bin"
