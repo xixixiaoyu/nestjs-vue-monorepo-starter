@@ -19,7 +19,20 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     // 隐藏密码信息
     const sanitizedConnectionString = connectionString.replace(/\/\/([^:]+):([^@]+)@/, '//***:***@')
 
-    const adapter = new PrismaPg({ connectionString })
+    // 优化连接池配置
+    const adapter = new PrismaPg({
+      connectionString,
+      // 连接池配置
+      poolSize: parseInt(process.env.DB_POOL_SIZE || '10', 10),
+      // 连接超时配置
+      connectionTimeoutMillis: parseInt(process.env.DB_CONNECTION_TIMEOUT || '10000', 10),
+      // 空闲超时配置
+      idleTimeoutMillis: parseInt(process.env.DB_IDLE_TIMEOUT || '30000', 10),
+      // 最大生存时间
+      maxLifetimeMillis: parseInt(process.env.DB_MAX_LIFETIME || '1800000', 10), // 30分钟
+      // 健康检查配置
+      healthCheckInterval: parseInt(process.env.DB_HEALTH_CHECK_INTERVAL || '60000', 10), // 1分钟
+    })
 
     // 根据环境配置日志级别
     const logLevels = isDevelopment
