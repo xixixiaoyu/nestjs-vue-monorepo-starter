@@ -150,16 +150,27 @@ SERVER_MEMORY_LIMIT=2G
 ### 1. 安全配置
 
 ```bash
-# 使用强密码
+# 生成强密码
 DB_PASSWORD=$(openssl rand -base64 32)
 JWT_SECRET=$(openssl rand -base64 64)
-
-# 限制数据库端口暴露（生产环境）
-DB_PORT=  # 留空表示不暴露端口
-
-# 启用 Redis 密码
 REDIS_PASSWORD=$(openssl rand -base64 32)
+
+# 生产环境安全设置
+DB_PORT=  # 留空表示不暴露端口到主机
+REDIS_PORT=  # 留空表示不暴露端口到主机
+
+# 确保 CORS 配置正确
+CORS_ORIGINS=https://yourdomain.com,https://www.yourdomain.com
 ```
+
+### 2. 生产环境部署检查清单
+
+- [ ] 更改所有默认密码
+- [ ] 设置正确的 CORS 域名
+- [ ] 不暴露数据库和 Redis 端口
+- [ ] 配置 SSL 证书
+- [ ] 设置资源限制
+- [ ] 启用日志轮转
 
 ### 2. 日志管理
 

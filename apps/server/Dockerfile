@@ -1,5 +1,5 @@
 # 多阶段构建 - 基础镜像
-FROM node:18-alpine AS base
+FROM node:18.19.0-alpine AS base
 # 安装 pnpm
 RUN npm install -g pnpm@9.12.0
 # 设置工作目录
@@ -28,7 +28,7 @@ RUN pnpm --filter @server build
 RUN pnpm --filter @project/shared-types build
 
 # 多阶段构建 - 生产环境（默认）
-FROM node:18-alpine AS production
+FROM node:18.19.0-alpine AS production
 # 安装 pnpm 和 PM2
 RUN npm install -g pnpm@9.12.0 pm2
 # 创建非 root 用户

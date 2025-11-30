@@ -1,5 +1,5 @@
 # 多阶段构建
-FROM node:20-alpine AS base
+FROM node:20.11.0-alpine AS base
 
 # 安装 pnpm
 RUN npm install -g pnpm@9.12.0
@@ -25,7 +25,7 @@ COPY . .
 RUN pnpm --filter @web build
 
 # 生产阶段 - 使用 nginx 服务静态文件
-FROM nginx:alpine AS production
+FROM nginx:1.25.3-alpine AS production
 
 # 复制自定义 nginx 配置
 COPY apps/web/nginx.conf /etc/nginx/nginx.conf
