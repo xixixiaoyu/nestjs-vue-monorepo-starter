@@ -63,17 +63,26 @@ const form = ref<LoginInput & { name?: string }>({
 const handleSubmit = async () => {
   let success: boolean
 
+  // 获取重定向路径
+  const redirectPath = authStore.getRedirectPath()
+
   if (isLogin.value) {
-    success = await authStore.login({
-      email: form.value.email,
-      password: form.value.password,
-    })
+    success = await authStore.login(
+      {
+        email: form.value.email,
+        password: form.value.password,
+      },
+      redirectPath
+    )
   } else {
-    success = await authStore.register({
-      email: form.value.email,
-      password: form.value.password,
-      name: form.value.name,
-    })
+    success = await authStore.register(
+      {
+        email: form.value.email,
+        password: form.value.password,
+        name: form.value.name,
+      },
+      redirectPath
+    )
   }
 
   if (success) {

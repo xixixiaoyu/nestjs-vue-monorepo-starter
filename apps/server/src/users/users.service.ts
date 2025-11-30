@@ -4,6 +4,7 @@ import { randomUUID } from 'node:crypto'
 import type { CreateUserInput, UserDto } from '@shared-types'
 import { PrismaService } from '../prisma/prisma.service'
 import { BaseService } from '../common/base/base.service'
+import { NotFoundException } from '../common/exceptions/business.exception'
 
 @Injectable()
 export class UsersService extends BaseService {
@@ -90,7 +91,9 @@ export class UsersService extends BaseService {
       }
 
       const user = await this.prisma.user.findUnique({ where: { id } })
-      if (!user) return null
+      if (!user) {
+        throw new NotFoundException('用户')
+      }
 
       return {
         id: user.id,
@@ -115,7 +118,9 @@ export class UsersService extends BaseService {
       }
 
       const user = await this.prisma.user.findUnique({ where: { email } })
-      if (!user) return null
+      if (!user) {
+        throw new NotFoundException('用户')
+      }
 
       return {
         id: user.id,

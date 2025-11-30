@@ -4,6 +4,13 @@ import type { ApiResponse, ApiError, JwtPayload } from '@shared-types'
 // 内存中存储访问令牌
 let accessToken: string | null = null
 
+// 请求重试配置
+const MAX_RETRIES = 3
+const RETRY_DELAY = 1000 // 1秒
+
+// 延迟函数
+const delay = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms))
+
 // 创建 axios 实例
 const createApiInstance = (): AxiosInstance => {
   const instance = axios.create({
@@ -37,6 +44,19 @@ const createApiInstance = (): AxiosInstance => {
     },
     async (error: any) => {
       const originalRequest = error.config
+
+      // 添加重试配置
+      originalRequest._retryCount = originalRequest._retryCount || 0
+
+      // 处理网络错误或服务器错误，进行重试
+      if (
+        (!error.response || error.response?.status >= 500) &&
+        originalRequest._retryCount < MAX_RETRIES
+      ) {
+        originalRequest._retryCount += 1
+        await delay(RETRY_DELAY * originalRequest._retryCount)
+        return instance(originalRequest)
+      }
 
       // 处理 401 错误 - 尝试刷新 token
       if (error.response?.status === 401 && !originalRequest._retry) {
@@ -91,31 +111,36 @@ export class ApiClient {
   // GET 请求
   async get<T>(url: string, config?: AxiosRequestConfig): Promise<T> {
     const response = await this.client.get<ApiResponse<T>>(url, config)
-    return (response.data.data as T) || (response.data as T)
+    // 检查响应是否有 data 属性，如果有则返回 data，否则返回整个响应数据
+    return response.data.data !== undefined ? (response.data.data as T) : (response.data as T)
   }
 
   // POST 请求
   async post<T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> {
     const response = await this.client.post<ApiResponse<T>>(url, data, config)
-    return (response.data.data as T) || (response.data as T)
+    // 检查响应是否有 data 属性，如果有则返回 data，否则返回整个响应数据
+    return response.data.data !== undefined ? (response.data.data as T) : (response.data as T)
   }
 
   // PUT 请求
   async put<T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> {
     const response = await this.client.put<ApiResponse<T>>(url, data, config)
-    return (response.data.data as T) || (response.data as T)
+    // 检查响应是否有 data 属性，如果有则返回 data，否则返回整个响应数据
+    return response.data.data !== undefined ? (response.data.data as T) : (response.data as T)
   }
 
   // PATCH 请求
   async patch<T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> {
     const response = await this.client.patch<ApiResponse<T>>(url, data, config)
-    return (response.data.data as T) || (response.data as T)
+    // 检查响应是否有 data 属性，如果有则返回 data，否则返回整个响应数据
+    return response.data.data !== undefined ? (response.data.data as T) : (response.data as T)
   }
 
   // DELETE 请求
   async delete<T>(url: string, config?: AxiosRequestConfig): Promise<T> {
     const response = await this.client.delete<ApiResponse<T>>(url, config)
-    return (response.data.data as T) || (response.data as T)
+    // 检查响应是否有 data 属性，如果有则返回 data，否则返回整个响应数据
+    return response.data.data !== undefined ? (response.data.data as T) : (response.data as T)
   }
 
   // 文件上传

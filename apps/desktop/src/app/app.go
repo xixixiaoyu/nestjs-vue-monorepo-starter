@@ -1,18 +1,11 @@
-package main
+package app
 
 import (
 	"context"
-	"desktop/src/app"
-	"embed"
 	"fmt"
 
-	"github.com/wailsapp/wails/v2"
-	"github.com/wailsapp/wails/v2/pkg/options"
-	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
+	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
-
-//go:embed web/dist
-var assets embed.FS
 
 // App struct
 type App struct {
@@ -29,7 +22,7 @@ func (a *App) OnStartup(ctx context.Context) {
 	a.ctx = ctx
 }
 
-// OnDomReady is called after front-end resources have been loaded
+// OnDomReady is called after the front-end resources have been loaded
 func (a *App) OnDomReady(ctx context.Context) {
 	// Here you can make your front-end interact with the backend
 }
@@ -60,26 +53,10 @@ func (a *App) GetAppInfo() map[string]interface{} {
 	}
 }
 
-func main() {
-	// Create an instance of the app structure
-	app := app.NewApp()
-
-	// Create application with options
-	err := wails.Run(&options.App{
-		Title:  "Desktop App",
-		Width:  1024,
-		Height: 768,
-		AssetServer: &assetserver.Options{
-			Assets: assets,
-		},
-		BackgroundColour: &options.RGBA{R: 27, G: 38, B: 54, A: 1},
-		OnStartup:        app.OnStartup,
-		OnDomReady:       app.OnDomReady,
-		OnBeforeClose:    app.OnBeforeClose,
-		OnShutdown:       app.OnShutdown,
+// ShowNotification shows a desktop notification
+func (a *App) ShowNotification(title, body string) {
+	runtime.EventsEmit(a.ctx, "notification", map[string]string{
+		"title": title,
+		"body":  body,
 	})
-
-	if err != nil {
-		println("Error:", err.Error())
-	}
 }

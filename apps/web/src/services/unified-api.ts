@@ -4,7 +4,7 @@
  */
 
 import { isDesktop, EnvironmentApi } from '@/utils/environment'
-import type { ApiResponse, UserDto, HealthDto } from '@project/shared-types'
+import type { ApiResponse, UserDto, HealthDto } from '@shared-types'
 
 /**
  * 统一 API 服务类
@@ -146,113 +146,77 @@ export class UnifiedApiService {
   }
 
   /**
-   * 通用 HTTP GET 请求
+   * 通用 HTTP 请求方法
    */
-  private async httpGet<T>(endpoint: string): Promise<ApiResponse<T>> {
+  private async httpRequest<T>(
+    method: 'GET' | 'POST' | 'PUT' | 'DELETE',
+    endpoint: string,
+    data?: any
+  ): Promise<ApiResponse<T>> {
     const url = `${this.baseUrl}${endpoint}`
+    const options = {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include', // 支持 Cookie
+    } as any
+
+    // 添加请求体（仅对 POST 和 PUT 请求）
+    if (data && (method === 'POST' || method === 'PUT')) {
+      options.body = JSON.stringify(data)
+    }
 
     try {
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include', // 支持 Cookie
-      })
+      const response = await fetch(url, options)
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
+        // 尝试解析错误响应
+        let errorData
+        try {
+          errorData = await response.json()
+        } catch {
+          // 如果无法解析 JSON，使用状态文本
+          errorData = { message: response.statusText }
+        }
+
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`)
       }
 
       return await response.json()
     } catch (error) {
       // eslint-disable-next-line no-console
-      console.error('HTTP GET 请求失败:', error)
+      console.error(`HTTP ${method} 请求失败:`, error)
       throw error
     }
+  }
+
+  /**
+   * 通用 HTTP GET 请求
+   */
+  private async httpGet<T>(endpoint: string): Promise<ApiResponse<T>> {
+    return this.httpRequest<T>('GET', endpoint)
   }
 
   /**
    * 通用 HTTP POST 请求
    */
   private async httpPost<T>(endpoint: string, data: any): Promise<ApiResponse<T>> {
-    const url = `${this.baseUrl}${endpoint}`
-
-    try {
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-        credentials: 'include', // 支持 Cookie
-      })
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-
-      return await response.json()
-    } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error('HTTP POST 请求失败:', error)
-      throw error
-    }
+    return this.httpRequest<T>('POST', endpoint, data)
   }
 
   /**
    * 通用 HTTP PUT 请求
    */
   private async httpPut<T>(endpoint: string, data: any): Promise<ApiResponse<T>> {
-    const url = `${this.baseUrl}${endpoint}`
-
-    try {
-      const response = await fetch(url, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-        credentials: 'include', // 支持 Cookie
-      })
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-
-      return await response.json()
-    } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error('HTTP PUT 请求失败:', error)
-      throw error
-    }
+    return this.httpRequest<T>('PUT', endpoint, data)
   }
 
   /**
    * 通用 HTTP DELETE 请求
    */
   private async httpDelete<T>(endpoint: string): Promise<ApiResponse<T>> {
-    const url = `${this.baseUrl}${endpoint}`
-
-    try {
-      const response = await fetch(url, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include', // 支持 Cookie
-      })
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-
-      return await response.json()
-    } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error('HTTP DELETE 请求失败:', error)
-      throw error
-    }
+    return this.httpRequest<T>('DELETE', endpoint)
   }
 }
 

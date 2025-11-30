@@ -6,6 +6,7 @@ import {
   IsOptional,
   IsString,
   IsArray,
+  IsBoolean,
   validateSync,
   Min,
   Max,
@@ -58,6 +59,22 @@ class EnvironmentVariables {
   @IsString()
   @IsOptional()
   REDIS_PASSWORD?: string
+
+  @IsString()
+  @IsOptional()
+  APP_NAME?: string
+
+  @IsString()
+  @IsOptional()
+  APP_VERSION?: string
+
+  @IsBoolean()
+  @IsOptional()
+  ENABLE_SWAGGER?: boolean
+
+  @IsString()
+  @IsOptional()
+  LOG_LEVEL?: string
 }
 
 export const validateEnvironment = (config: Record<string, unknown>) => {
@@ -73,7 +90,23 @@ export const validateEnvironment = (config: Record<string, unknown>) => {
   // 处理 CORS_ORIGINS 字符串数组
   if (config.CORS_ORIGINS !== undefined && typeof config.CORS_ORIGINS === 'string') {
     config.CORS_ORIGINS = (config.CORS_ORIGINS as string).split(',').map((origin) => origin.trim())
+  } else if (config.CORS_ORIGINS === undefined) {
+    // 如果未定义，设置默认值
+    config.CORS_ORIGINS = []
   }
+
+  // 处理布尔值环境变量
+  if (config.ENABLE_SWAGGER !== undefined) {
+    if (typeof config.ENABLE_SWAGGER === 'string') {
+      config.ENABLE_SWAGGER = config.ENABLE_SWAGGER.toLowerCase() === 'true'
+    }
+  }
+
+  // 设置默认值
+  config.APP_NAME = config.APP_NAME || 'Nest Vue Template'
+  config.APP_VERSION = config.APP_VERSION || '1.0.0'
+  config.JWT_EXPIRES_IN = config.JWT_EXPIRES_IN || '1h'
+  config.LOG_LEVEL = config.LOG_LEVEL || 'info'
 
   const validated = plainToInstance(EnvironmentVariables, config, {
     enableImplicitConversion: true,

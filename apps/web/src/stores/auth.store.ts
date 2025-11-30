@@ -23,7 +23,7 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   // 登录
-  const login = async (credentials: LoginInput): Promise<boolean> => {
+  const login = async (credentials: LoginInput, redirectPath?: string): Promise<boolean> => {
     loading.value = true
     error.value = null
 
@@ -34,9 +34,17 @@ export const useAuthStore = defineStore('auth', () => {
       jwtUtils.setAccessToken(response.accessToken)
       user.value = jwtUtils.getCurrentUser()
 
+      // 登录成功后重定向
+      if (redirectPath) {
+        window.location.href = redirectPath
+      } else if (window.location.pathname === '/auth') {
+        // 如果在登录页，重定向到首页
+        window.location.href = '/'
+      }
+
       return true
     } catch (err: any) {
-      error.value = err.response?.data?.message || '登录失败'
+      error.value = err.response?.data?.message || err.message || '登录失败'
       return false
     } finally {
       loading.value = false
@@ -44,7 +52,7 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   // 注册
-  const register = async (userData: RegisterInput): Promise<boolean> => {
+  const register = async (userData: RegisterInput, redirectPath?: string): Promise<boolean> => {
     loading.value = true
     error.value = null
 
@@ -55,9 +63,17 @@ export const useAuthStore = defineStore('auth', () => {
       jwtUtils.setAccessToken(response.accessToken)
       user.value = jwtUtils.getCurrentUser()
 
+      // 注册成功后重定向
+      if (redirectPath) {
+        window.location.href = redirectPath
+      } else if (window.location.pathname === '/auth') {
+        // 如果在注册页，重定向到首页
+        window.location.href = '/'
+      }
+
       return true
     } catch (err: any) {
-      error.value = err.response?.data?.message || '注册失败'
+      error.value = err.response?.data?.message || err.message || '注册失败'
       return false
     } finally {
       loading.value = false
@@ -94,6 +110,12 @@ export const useAuthStore = defineStore('auth', () => {
     error.value = null
   }
 
+  // 检查重定向路径
+  const getRedirectPath = (): string => {
+    const urlParams = new URLSearchParams(window.location.search)
+    return urlParams.get('redirect') || '/'
+  }
+
   return {
     // 状态（只读）
     user: readonly(user),
@@ -112,5 +134,6 @@ export const useAuthStore = defineStore('auth', () => {
     logout,
     refreshUser,
     clearError,
+    getRedirectPath,
   }
 })

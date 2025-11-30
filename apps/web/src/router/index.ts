@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
+import { useAuthStore } from '@/stores/auth.store'
 
 // 路由配置 - 使用懒加载
 const routes: RouteRecordRaw[] = [
@@ -19,6 +20,16 @@ const routes: RouteRecordRaw[] = [
     meta: {
       title: '认证',
       requiresAuth: false,
+    },
+  },
+  // 添加受保护的路由示例
+  {
+    path: '/dashboard',
+    name: 'dashboard',
+    component: () => import('@/views/HomeView.vue'), // 暂时使用 HomeView 作为示例
+    meta: {
+      title: '仪表板',
+      requiresAuth: true,
     },
   },
   // 添加 404 页面
@@ -54,15 +65,27 @@ router.beforeEach((to, from, next) => {
     document.title = `${to.meta.title} - Nest Vue Template`
   }
 
-  // 这里可以添加认证检查逻辑
-  // const authStore = useAuthStore()
-  // if (to.meta?.requiresAuth && !authStore.isAuthenticated) {
-  //   next('/auth')
-  // } else {
-  //   next()
-  // }
+  // 认证检查逻辑
+  const authStore = useAuthStore()
 
-  next()
+  // 初始化认证状态（如果尚未初始化）
+  if (!authStore.user && authStore.isAuthenticated) {
+    authStore.init()
+  }
+
+  // 检查路由是否需要认证
+  if (to.meta?.requiresAuth && !authStore.isAuthenticated) {
+    // 保存目标路由，登录后重定向
+    next({
+      path: '/auth',
+      query: { redirect: to.fullPath },
+    })
+  } else if (to.path === '/auth' && authStore.isAuthenticated) {
+    // 如果已认证用户访问登录页，重定向到首页
+    next('/')
+  } else {
+    next()
+  }
 })
 
 export default router

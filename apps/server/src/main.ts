@@ -48,14 +48,18 @@ async function bootstrap() {
     new BusinessExceptionFilter()
   )
 
-  const swaggerConfig = new DocumentBuilder()
-    .setTitle('Nest + Vue Template API')
-    .setDescription('API reference generated from decorators')
-    .setVersion('1.0.0')
-    .addBearerAuth()
-    .build()
-  const document = SwaggerModule.createDocument(app, swaggerConfig)
-  SwaggerModule.setup('docs', app, document)
+  // 根据环境变量决定是否启用 Swagger
+  const enableSwagger = configService.get<boolean>('ENABLE_SWAGGER') ?? true
+  if (enableSwagger) {
+    const swaggerConfig = new DocumentBuilder()
+      .setTitle(configService.get<string>('APP_NAME') || 'Nest + Vue Template API')
+      .setDescription('API reference generated from decorators')
+      .setVersion(configService.get<string>('APP_VERSION') || '1.0.0')
+      .addBearerAuth()
+      .build()
+    const document = SwaggerModule.createDocument(app, swaggerConfig)
+    SwaggerModule.setup('docs', app, document)
+  }
 
   // 使用 helmet 中间件添加安全头，配置更宽松的 CSP
   app.use(

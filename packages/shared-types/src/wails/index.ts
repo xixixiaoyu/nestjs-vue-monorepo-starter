@@ -6,6 +6,7 @@
 export interface WailsApp {
   Greet(name: string): Promise<string>
   GetAppInfo(): Promise<Record<string, any>>
+  ShowNotification(title: string, body: string): Promise<void>
 }
 
 // Wails 运行时类型
