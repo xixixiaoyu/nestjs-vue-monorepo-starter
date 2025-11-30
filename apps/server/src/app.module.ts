@@ -21,17 +21,6 @@ import { EmailModule } from './email/email.module'
       useFactory: createPinoLogger,
       inject: [ConfigService],
     }),
-    // BullMQ 全局配置，使用现有的 Redis 连接
-    // BullModule.forRootAsync({
-    //   useFactory: () =>
-    //     ({
-    //       connection: {
-    //         host: process.env.REDIS_HOST || 'localhost',
-    //         port: parseInt(process.env.REDIS_PORT || '6379', 10),
-    //         password: process.env.REDIS_PASSWORD || undefined,
-    //       },
-    //     }) as any,
-    // }),
     PrismaModule,
     // RedisModule,
     // CacheModule,

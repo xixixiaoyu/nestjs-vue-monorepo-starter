@@ -1,14 +1,6 @@
-import {
-  Processor,
-  Process,
-  OnQueueEvent,
-  OnQueueActive,
-  OnQueueCompleted,
-  OnQueueFailed,
-  OnQueueStalled,
-} from '@nestjs/bull'
+import { Processor, OnQueueEvent, WorkerHost } from '@nestjs/bullmq'
 import { Job } from 'bullmq'
-import { Logger } from '@nestjs/common'
+import { InjectPinoLogger, PinoLogger } from 'nestjs-pino'
 import { SendWelcomeEmailData } from './email.service'
 
 /**
@@ -16,30 +8,34 @@ import { SendWelcomeEmailData } from './email.service'
  * 处理所有与邮件相关的异步任务
  */
 @Processor('email-queue')
-export class EmailProcessor {
-  private readonly logger = new Logger(EmailProcessor.name)
+export class EmailProcessor extends WorkerHost {
+  constructor(
+    @InjectPinoLogger(EmailProcessor.name)
+    private readonly logger: PinoLogger
+  ) {
+    super()
+  }
 
   /**
    * 处理发送欢迎邮件的任务
    * @param job 包含邮件数据的任务
    */
-  @Process('send-welcome-email')
-  async handleSendWelcomeEmail(job: Job<SendWelcomeEmailData>) {
+  async process(job: Job<SendWelcomeEmailData>): Promise<any> {
     const { email, name, userId } = job.data
-    this.logger.log(`Processing welcome email job ${job.id} for user ${userId} (${email})`)
+    this.logger.info(`Processing welcome email job ${job.id} for user ${userId} (${email})`)
 
     try {
       // 模拟发送邮件的耗时操作
       await this.simulateEmailSending(email, name)
 
-      // 更新任务进度 (在 BullMQ 中使用 progress 属性)
-      job.progress = 50
+      // 更新任务进度 (在 BullMQ 中使用 updateProgress 方法)
+      await job.updateProgress(50)
 
       // 模拟更多处理时间
       await this.sleep(1000)
 
       // 更新任务进度为完成
-      job.progress = 100
+      await job.updateProgress(100)
 
       // 返回处理结果
       return {
@@ -69,7 +65,7 @@ export class EmailProcessor {
       throw new Error(`Failed to send email to ${email}: SMTP server error`)
     }
 
-    this.logger.log(`Email successfully sent to ${email} (took ${delay.toFixed(0)}ms)`)
+    this.logger.info(`Email successfully sent to ${email} (took ${delay.toFixed(0)}ms)`)
   }
 
   /**
@@ -81,22 +77,13 @@ export class EmailProcessor {
   }
 
   /**
-   * 监听任务激活事件（开始处理）
-   * @param job 激活的任务
-   */
-  @OnQueueActive()
-  onActive(job: Job<SendWelcomeEmailData>) {
-    this.logger.log(`Job ${job.id} is now active for user ${job.data.userId}`)
-  }
-
-  /**
    * 监听任务完成事件
    * @param job 完成的任务
    * @param result 任务结果
    */
-  @OnQueueCompleted()
+  @OnQueueEvent('completed')
   onCompleted(job: Job<SendWelcomeEmailData>, result: any) {
-    this.logger.log(
+    this.logger.info(
       `Job ${job.id} completed for user ${job.data.userId}. Result: ${JSON.stringify(result)}`
     )
   }
@@ -106,7 +93,7 @@ export class EmailProcessor {
    * @param job 失败的任务
    * @param error 错误信息
    */
-  @OnQueueFailed()
+  @OnQueueEvent('failed')
   onFailed(job: Job<SendWelcomeEmailData>, error: Error) {
     this.logger.error(
       `Job ${job.id} failed for user ${job.data.userId}. Error: ${error.message}`,
@@ -118,7 +105,7 @@ export class EmailProcessor {
    * 监听任务停滞事件（处理时间过长）
    * @param job 停滞的任务
    */
-  @OnQueueStalled()
+  @OnQueueEvent('stalled')
   onStalled(job: Job<SendWelcomeEmailData>) {
     this.logger.warn(`Job ${job.id} has stalled for user ${job.data.userId}`)
   }
@@ -130,6 +117,6 @@ export class EmailProcessor {
    */
   @OnQueueEvent('progress')
   onProgress(job: Job<SendWelcomeEmailData>, progress: number) {
-    this.logger.log(`Job ${job.id} progress: ${progress}% for user ${job.data.userId}`)
+    this.logger.info(`Job ${job.id} progress: ${progress}% for user ${job.data.userId}`)
   }
 }

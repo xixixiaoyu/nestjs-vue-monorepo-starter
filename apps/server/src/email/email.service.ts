@@ -1,6 +1,7 @@
-import { Injectable, Logger } from '@nestjs/common'
-import { InjectQueue } from '@nestjs/bull'
+import { Injectable } from '@nestjs/common'
+import { InjectQueue } from '@nestjs/bullmq'
 import { Queue } from 'bullmq'
+import { InjectPinoLogger, PinoLogger } from 'nestjs-pino'
 
 // 定义邮件任务的数据类型
 export interface SendWelcomeEmailData {
@@ -11,9 +12,10 @@ export interface SendWelcomeEmailData {
 
 @Injectable()
 export class EmailService {
-  private readonly logger = new Logger(EmailService.name)
-
-  constructor(@InjectQueue('email-queue') private emailQueue: Queue<SendWelcomeEmailData>) {}
+  constructor(
+    @InjectQueue('email-queue') private emailQueue: Queue<SendWelcomeEmailData>,
+    @InjectPinoLogger(EmailService.name) private readonly logger: PinoLogger
+  ) {}
 
   /**
    * 添加发送欢迎邮件的任务到队列
@@ -43,10 +45,10 @@ export class EmailService {
         }
       )
 
-      this.logger.log(`Welcome email job added: ${job.id} for user ${userId}`)
+      this.logger.info(`Welcome email job added: ${job.id} for user ${userId}`)
       return job
     } catch (error) {
-      this.logger.error('Failed to add welcome email job', error)
+      this.logger.error(error, 'Failed to add welcome email job')
       throw error
     }
   }
@@ -71,7 +73,7 @@ export class EmailService {
         failed: failed.length,
       }
     } catch (error) {
-      this.logger.error('Failed to get queue status', error)
+      this.logger.error(error, 'Failed to get queue status')
       throw error
     }
   }
