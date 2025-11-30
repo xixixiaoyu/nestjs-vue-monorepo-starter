@@ -16,6 +16,8 @@ const environmentVariablesSchema = z.object({
   REDIS_HOST: z.string().optional(),
   REDIS_PORT: z.coerce.number().min(1).max(65535).optional(),
   REDIS_PASSWORD: z.string().optional(),
+  THROTTLE_TTL: z.coerce.number().min(1).optional(),
+  THROTTLE_LIMIT: z.coerce.number().min(1).optional(),
   APP_NAME: z.string().optional(),
   APP_VERSION: z.string().optional(),
   ENABLE_SWAGGER: z.coerce.boolean().optional(),
@@ -38,6 +40,8 @@ export const validateEnvironment = (config: Record<string, unknown>) => {
   config.APP_VERSION = config.APP_VERSION || '1.0.0'
   config.JWT_EXPIRES_IN = config.JWT_EXPIRES_IN || '1h'
   config.LOG_LEVEL = config.LOG_LEVEL || 'info'
+  config.THROTTLE_TTL = config.THROTTLE_TTL || 60
+  config.THROTTLE_LIMIT = config.THROTTLE_LIMIT || 100
 
   const result = environmentVariablesSchema.safeParse(config)
 
