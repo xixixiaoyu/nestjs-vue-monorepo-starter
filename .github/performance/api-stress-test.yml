@@ -1,0 +1,56 @@
+config:
+  target: 'http://localhost:3000'
+  phases:
+    - duration: 30
+      arrivalRate: 50
+      name: 'Initial stress'
+    - duration: 60
+      arrivalRate: 100
+      name: 'Increasing stress'
+    - duration: 60
+      arrivalRate: 200
+      name: 'High stress'
+    - duration: 30
+      arrivalRate: 300
+      name: 'Maximum stress'
+    - duration: 30
+      arrivalRate: 10
+      name: 'Recovery'
+
+scenarios:
+  - name: 'Stress Test - Authentication'
+    weight: 40
+    flow:
+      - post:
+          url: '/auth/login'
+          json:
+            email: 'stress-test-{{ $randomString() }}@example.com'
+            password: 'password123'
+          capture:
+            - json: '$.access_token'
+              as: 'token'
+
+  - name: 'Stress Test - Data Operations'
+    weight: 35
+    flow:
+      - get:
+          url: '/users'
+          headers:
+            Authorization: 'Bearer {{ token }}'
+      - think: 0.5
+      - get:
+          url: '/users/{{ $randomInt(1, 1000) }}'
+          headers:
+            Authorization: 'Bearer {{ token }}'
+
+  - name: 'Stress Test - Write Operations'
+    weight: 25
+    flow:
+      - post:
+          url: '/users'
+          headers:
+            Authorization: 'Bearer {{ token }}'
+          json:
+            email: 'stress-{{ $randomString() }}@example.com'
+            name: 'Stress Test User'
+      - think: 1

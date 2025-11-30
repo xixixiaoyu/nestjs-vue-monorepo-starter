@@ -1,0 +1,230 @@
+name: Environment Setup
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
+      node-version:
+        required: false
+        type: string
+        default: '20'
+      pnpm-version:
+        required: false
+        type: string
+        default: '9.12.0'
+
+jobs:
+  setup:
+    name: Setup Environment
+    runs-on: ubuntu-latest
+    outputs:
+      node-version: ${{ steps.setup.outputs.node-version }}
+      pnpm-version: ${{ steps.setup.outputs.pnpm-version }}
+      environment-name: ${{ steps.setup.outputs.environment-name }}
+      is-production: ${{ steps.setup.outputs.is-production }}
+      is-staging: ${{ steps.setup.outputs.is-staging }}
+      is-development: ${{ steps.setup.outputs.is-development }}
+    steps:
+      - name: Setup Environment Variables
+        id: setup
+        run: |
+          echo "node-version=${{ inputs.node-version }}" >> $GITHUB_OUTPUT
+          echo "pnpm-version=${{ inputs.pnpm-version }}" >> $GITHUB_OUTPUT
+          echo "environment-name=${{ inputs.environment }}" >> $GITHUB_OUTPUT
+
+          if [ "${{ inputs.environment }}" = "production" ]; then
+            echo "is-production=true" >> $GITHUB_OUTPUT
+            echo "is-staging=false" >> $GITHUB_OUTPUT
+            echo "is-development=false" >> $GITHUB_OUTPUT
+          elif [ "${{ inputs.environment }}" = "staging" ]; then
+            echo "is-production=false" >> $GITHUB_OUTPUT
+            echo "is-staging=true" >> $GITHUB_OUTPUT
+            echo "is-development=false" >> $GITHUB_OUTPUT
+          else
+            echo "is-production=false" >> $GITHUB_OUTPUT
+            echo "is-staging=false" >> $GITHUB_OUTPUT
+            echo "is-development=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Display Environment Info
+        run: |
+          echo "Environment: ${{ inputs.environment }}"
+          echo "Node Version: ${{ inputs.node-version }}"
+          echo "pnpm Version: ${{ inputs.pnpm-version }}"
+          echo "Is Production: ${{ steps.setup.outputs.is-production }}"
+          echo "Is Staging: ${{ steps.setup.outputs.is-staging }}"
+          echo "Is Development: ${{ steps.setup.outputs.is-development }}"
+
+  # 验证环境配置
+  validate:
+    name: Validate Environment
+    runs-on: ubuntu-latest
+    needs: setup
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate Environment Files
+        run: |
+          echo "Validating environment configuration..."
+
+          # 检查必要的环境文件是否存在
+          if [ "${{ needs.setup.outputs.is-production }}" = "true" ]; then
+            echo "Validating production environment..."
+            # 检查生产环境特定的配置
+          elif [ "${{ needs.setup.outputs.is-staging }}" = "true" ]; then
+            echo "Validating staging environment..."
+            # 检查预发布环境特定的配置
+          else
+            echo "Validating development environment..."
+            # 检查开发环境特定的配置
+          fi
+
+      - name: Validate Secrets
+        run: |
+          echo "Validating required secrets..."
+
+          # 检查必要的密钥是否存在
+          if [ "${{ needs.setup.outputs.is-production }}" = "true" ]; then
+            # 生产环境必需的密钥
+            echo "Checking production secrets..."
+            # 这里可以添加密钥验证逻辑
+          fi
+
+  # 准备环境特定的配置
+  prepare-config:
+    name: Prepare Configuration
+    runs-on: ubuntu-latest
+    needs: [setup, validate]
+    outputs:
+      config-file: ${{ steps.config.outputs.config-file }}
+      docker-tag: ${{ steps.config.outputs.docker-tag }}
+      deploy-url: ${{ steps.config.outputs.deploy-url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Prepare Environment Configuration
+        id: config
+        run: |
+          ENV_NAME="${{ needs.setup.outputs.environment-name }}"
+          CONFIG_FILE=".env.${ENV_NAME}"
+          DOCKER_TAG="${ENV_NAME}-$(git rev-parse --short HEAD)"
+
+          if [ "${{ needs.setup.outputs.is-production }}" = "true" ]; then
+            DEPLOY_URL="https://your-domain.com"
+          elif [ "${{ needs.setup.outputs.is-staging }}" = "true" ]; then
+            DEPLOY_URL="https://staging.your-domain.com"
+          else
+            DEPLOY_URL="http://localhost:3000"
+          fi
+
+          echo "config-file=${CONFIG_FILE}" >> $GITHUB_OUTPUT
+          echo "docker-tag=${DOCKER_TAG}" >> $GITHUB_OUTPUT
+          echo "deploy-url=${DEPLOY_URL}" >> $GITHUB_OUTPUT
+
+          echo "Configuration prepared:"
+          echo "  Config File: ${CONFIG_FILE}"
+          echo "  Docker Tag: ${DOCKER_TAG}"
+          echo "  Deploy URL: ${DEPLOY_URL}"
+
+      - name: Create Environment File
+        run: |
+          ENV_FILE="${{ steps.config.outputs.config-file }}"
+
+          # 创建环境特定的配置文件
+          cat > ${ENV_FILE} << EOF
+          # Environment: ${{ needs.setup.outputs.environment-name }}
+          # Generated on: $(date)
+
+          # Application
+          NODE_ENV=${{ needs.setup.outputs.environment-name }}
+          PORT=3000
+
+          # Database
+          DATABASE_URL=\${{ secrets.DATABASE_URL }}
+
+          # Redis
+          REDIS_URL=\${{ secrets.REDIS_URL }}
+
+          # JWT
+          JWT_SECRET=\${{ secrets.JWT_SECRET }}
+          JWT_EXPIRES_IN=7d
+
+          # Email
+          EMAIL_HOST=\${{ secrets.EMAIL_HOST }}
+          EMAIL_PORT=\${{ secrets.EMAIL_PORT }}
+          EMAIL_USER=\${{ secrets.EMAIL_USER }}
+          EMAIL_PASS=\${{ secrets.EMAIL_PASS }}
+
+          # Frontend
+          VITE_API_BASE_URL=${{ steps.config.outputs.deploy-url }}
+
+          # Monitoring
+          SENTRY_DSN=\${{ secrets.SENTRY_DSN }}
+
+          # Analytics
+          GOOGLE_ANALYTICS_ID=\${{ secrets.GOOGLE_ANALYTICS_ID }}
+          EOF
+
+          echo "Created environment file: ${ENV_FILE}"
+
+      - name: Upload Environment File
+        uses: actions/upload-artifact@v4
+        with:
+          name: env-config-${{ needs.setup.outputs.environment-name }}
+          path: ${{ steps.config.outputs.config-file }}
+          retention-days: 1
+
+  # 设置工具链
+  setup-tools:
+    name: Setup Tools
+    runs-on: ubuntu-latest
+    needs: setup
+    steps:
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ needs.setup.outputs.node-version }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ needs.setup.outputs.pnpm-version }}
+
+      - name: Setup Go (for Desktop)
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Setup AWS CLI (if needed)
+        if: needs.setup.outputs.is-production == 'true' || needs.setup.outputs.is-staging == 'true'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Setup kubectl (if needed)
+        if: needs.setup.outputs.is-production == 'true' || needs.setup.outputs.is-staging == 'true'
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'v1.28.0'
+
+      - name: Verify Tools
+        run: |
+          echo "Verifying installed tools..."
+          node --version
+          pnpm --version
+          go version
+          docker --version
+
+          if [ "${{ needs.setup.outputs.is-production }}" = "true" ] || [ "${{ needs.setup.outputs.is-staging }}" = "true" ]; then
+            aws --version
+            kubectl version --client
+          fi

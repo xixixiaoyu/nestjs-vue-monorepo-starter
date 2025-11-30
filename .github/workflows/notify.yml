@@ -1,0 +1,207 @@
+name: Notifications
+
+on:
+  workflow_run:
+    workflows: ['CI', 'Security Scan', 'Deploy', 'Release', 'Performance Test']
+    types:
+      - completed
+  status: []
+  check_run:
+    types: [completed]
+
+jobs:
+  # CI 通知
+  ci-notification:
+    name: CI Notification
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.name == 'CI'
+    steps:
+      - name: Get workflow conclusion
+        id: conclusion
+        run: |
+          echo "conclusion=${{ github.event.workflow_run.conclusion }}" >> $GITHUB_OUTPUT
+
+      - name: Notify Slack on Success
+        if: steps.conclusion.outputs.conclusion == 'success'
+        run: |
+          echo "✅ CI pipeline completed successfully!"
+          # curl -X POST -H 'Content-type: application/json' \
+          #   --data '{"text":"✅ CI pipeline for ${{ github.repository }} completed successfully!\n\nBranch: ${{ github.event.workflow_run.head_branch }}\nCommit: ${{ github.event.workflow_run.head_sha }}\n\n🔗 [View Workflow](${{ github.event.workflow_run.html_url }})"}' \
+          #   ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: Notify Slack on Failure
+        if: steps.conclusion.outputs.conclusion == 'failure'
+        run: |
+          echo "❌ CI pipeline failed!"
+          # curl -X POST -H 'Content-type: application/json' \
+          #   --data '{"text":"❌ CI pipeline for ${{ github.repository }} failed!\n\nBranch: ${{ github.event.workflow_run.head_branch }}\nCommit: ${{ github.event.workflow_run.head_sha }}\n\n🔗 [View Workflow](${{ github.event.workflow_run.html_url }})"}' \
+          #   ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  # 安全扫描通知
+  security-notification:
+    name: Security Notification
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.name == 'Security Scan'
+    steps:
+      - name: Get workflow conclusion
+        id: conclusion
+        run: |
+          echo "conclusion=${{ github.event.workflow_run.conclusion }}" >> $GITHUB_OUTPUT
+
+      - name: Notify Slack on Security Issues
+        if: steps.conclusion.outputs.conclusion == 'failure'
+        run: |
+          echo "🚨 Security scan found issues!"
+          # curl -X POST -H 'Content-type: application/json' \
+          #   --data '{"text":"🚨 Security scan for ${{ github.repository }} found issues!\n\nBranch: ${{ github.event.workflow_run.head_branch }}\nCommit: ${{ github.event.workflow_run.head_sha }}\n\n🔗 [View Security Scan](${{ github.event.workflow_run.html_url }})"}' \
+          #   ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: Send Email on Security Issues
+        if: steps.conclusion.outputs.conclusion == 'failure'
+        run: |
+          echo "Sending security notification email..."
+          # 这里可以添加邮件发送逻辑
+          # 使用 GitHub Actions 的邮件发送 action 或自定义脚本
+
+  # 部署通知
+  deployment-notification:
+    name: Deployment Notification
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.name == 'Deploy'
+    steps:
+      - name: Get workflow conclusion
+        id: conclusion
+        run: |
+          echo "conclusion=${{ github.event.workflow_run.conclusion }}" >> $GITHUB_OUTPUT
+
+      - name: Notify Slack on Deployment Success
+        if: steps.conclusion.outputs.conclusion == 'success'
+        run: |
+          echo "🚀 Deployment completed successfully!"
+          # curl -X POST -H 'Content-type: application/json' \
+          #   --data '{"text":"🚀 Deployment for ${{ github.repository }} completed successfully!\n\nBranch: ${{ github.event.workflow_run.head_branch }}\nCommit: ${{ github.event.workflow_run.head_sha }}\n\n🔗 [View Deployment](${{ github.event.workflow_run.html_url }})"}' \
+          #   ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: Notify Slack on Deployment Failure
+        if: steps.conclusion.outputs.conclusion == 'failure'
+        run: |
+          echo "❌ Deployment failed!"
+          # curl -X POST -H 'Content-type: application/json' \
+          #   --data '{"text":"❌ Deployment for ${{ github.repository }} failed!\n\nBranch: ${{ github.event.workflow_run.head_branch }}\nCommit: ${{ github.event.workflow_run.head_sha }}\n\n🔗 [View Deployment](${{ github.event.workflow_run.html_url }})"}' \
+          #   ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  # 发布通知
+  release-notification:
+    name: Release Notification
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.name == 'Release'
+    steps:
+      - name: Get workflow conclusion
+        id: conclusion
+        run: |
+          echo "conclusion=${{ github.event.workflow_run.conclusion }}" >> $GITHUB_OUTPUT
+
+      - name: Notify Slack on Release
+        if: steps.conclusion.outputs.conclusion == 'success'
+        run: |
+          echo "🎉 New release published!"
+          # curl -X POST -H 'Content-type: application/json' \
+          #   --data '{"text":"🎉 New release for ${{ github.repository }} is now available!\n\nBranch: ${{ github.event.workflow_run.head_branch }}\nCommit: ${{ github.event.workflow_run.head_sha }}\n\n🔗 [View Release](${{ github.event.workflow_run.html_url }})"}' \
+          #   ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: Send Release Email
+        if: steps.conclusion.outputs.conclusion == 'success'
+        run: |
+          echo "Sending release announcement email..."
+          # 这里可以添加邮件发送逻辑
+
+  # 性能测试通知
+  performance-notification:
+    name: Performance Notification
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.name == 'Performance Test'
+    steps:
+      - name: Get workflow conclusion
+        id: conclusion
+        run: |
+          echo "conclusion=${{ github.event.workflow_run.conclusion }}" >> $GITHUB_OUTPUT
+
+      - name: Notify Slack on Performance Issues
+        if: steps.conclusion.outputs.conclusion == 'failure'
+        run: |
+          echo "⚠️ Performance test detected issues!"
+          # curl -X POST -H 'Content-type: application/json' \
+          #   --data '{"text":"⚠️ Performance test for ${{ github.repository }} detected issues!\n\nBranch: ${{ github.event.workflow_run.head_branch }}\nCommit: ${{ github.event.workflow_run.head_sha }}\n\n🔗 [View Performance Test](${{ github.event.workflow_run.html_url }})"}' \
+          #   ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: Send Performance Report
+        if: steps.conclusion.outputs.conclusion == 'success'
+        run: |
+          echo "Sending performance report..."
+          # 这里可以添加性能报告发送逻辑
+
+  # 状态变更通知
+  status-notification:
+    name: Status Notification
+    runs-on: ubuntu-latest
+    if: github.event_name == 'status'
+    steps:
+      - name: Notify on Status Change
+        run: |
+          echo "Status changed for commit ${{ github.event.sha }}"
+          echo "State: ${{ github.event.state }}"
+          echo "Context: ${{ github.event.context }}"
+          echo "Description: ${{ github.event.description }}"
+
+      - name: Notify Slack on Critical Status Changes
+        if: github.event.state == 'failure' && (github.event.context == 'ci/circleci' || github.event.context == 'continuous-integration/jenkins')
+        run: |
+          echo "🚨 Critical status change detected!"
+          # curl -X POST -H 'Content-type: application/json' \
+          #   --data '{"text":"🚨 Critical status change for ${{ github.repository }}!\n\nCommit: ${{ github.event.sha }}\nContext: ${{ github.event.context }}\nState: ${{ github.event.state }}\nDescription: ${{ github.event.description }}"}' \
+          #   ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  # 检查运行通知
+  check-run-notification:
+    name: Check Run Notification
+    runs-on: ubuntu-latest
+    if: github.event_name == 'check_run'
+    steps:
+      - name: Notify on Check Run Completion
+        run: |
+          echo "Check run completed: ${{ github.event.check_run.name }}"
+          echo "Status: ${{ github.event.check_run.status }}"
+          echo "Conclusion: ${{ github.event.check_run.conclusion }}"
+
+      - name: Notify Slack on Failed Check Runs
+        if: github.event.check_run.conclusion == 'failure'
+        run: |
+          echo "❌ Check run failed!"
+          # curl -X POST -H 'Content-type: application/json' \
+          #   --data '{"text":"❌ Check run failed for ${{ github.repository }}!\n\nCheck: ${{ github.event.check_run.name }}\nCommit: ${{ github.event.check_run.head_sha }}\n\n🔗 [View Details](${{ github.event.check_run.html_url }})"}' \
+          #   ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  # 每日汇总通知
+  daily-summary:
+    name: Daily Summary
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule'
+    steps:
+      - name: Generate Daily Summary
+        run: |
+          echo "Generating daily summary for $(date +%Y-%m-%d)"
+
+          # 这里可以添加获取过去 24 小时内所有工作流状态的逻辑
+          # 然后生成汇总报告
+
+      - name: Send Daily Summary to Slack
+        run: |
+          echo "Sending daily summary to Slack..."
+          # curl -X POST -H 'Content-type: application/json' \
+          #   --data '{"text":"📊 Daily Summary for ${{ github.repository }} - $(date +%Y-%m-%d)\n\nHere is the summary of all activities in the past 24 hours..."}' \
+          #   ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: Send Daily Summary Email
+        run: |
+          echo "Sending daily summary email..."
+          # 这里可以添加邮件发送逻辑

@@ -1,0 +1,300 @@
+name: Release
+
+on:
+  push:
+    branches: ['main']
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '20'
+  PNPM_VERSION: '9.12.0'
+
+jobs:
+  # 版本检查和更新
+  version-check:
+    name: Version Check
+    runs-on: ubuntu-latest
+    outputs:
+      version-changed: ${{ steps.version-check.outputs.changed }}
+      new-version: ${{ steps.version-check.outputs.new-version }}
+      release-type: ${{ steps.version-check.outputs.release-type }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Check for version changes
+        id: version-check
+        run: |
+          # 获取当前版本
+          CURRENT_VERSION=$(node -p "require('./package.json').version")
+          echo "Current version: $CURRENT_VERSION"
+
+          # 检查是否有 conventional commits
+          if git log --oneline --grep="feat" --grep="fix" --grep="perf" --grep="BREAKING CHANGE" origin/main..HEAD | grep -q .; then
+            echo "Found conventional commits, checking version bump..."
+            
+            # 安装 conventional-commits-detector
+            npm install -g conventional-commits-detector conventional-recommended-bump
+            
+            # 检测推荐的版本提升类型
+            RELEASE_TYPE=$(conventional-recommended-bump -p angular)
+            echo "Recommended release type: $RELEASE_TYPE"
+            
+            # 计算新版本
+            if [ "$RELEASE_TYPE" = "major" ]; then
+              NEW_VERSION=$(node -p "
+                const version = require('./package.json').version.split('.');
+                version[0] = parseInt(version[0]) + 1;
+                version[1] = 0;
+                version[2] = 0;
+                version.join('.')
+              ")
+            elif [ "$RELEASE_TYPE" = "minor" ]; then
+              NEW_VERSION=$(node -p "
+                const version = require('./package.json').version.split('.');
+                version[1] = parseInt(version[1]) + 1;
+                version[2] = 0;
+                version.join('.')
+              ")
+            else
+              NEW_VERSION=$(node -p "
+                const version = require('./package.json').version.split('.');
+                version[2] = parseInt(version[2]) + 1;
+                version.join('.')
+              ")
+            fi
+            
+            echo "New version: $NEW_VERSION"
+            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "new-version=$NEW_VERSION" >> $GITHUB_OUTPUT
+            echo "release-type=$RELEASE_TYPE" >> $GITHUB_OUTPUT
+          else
+            echo "No version changes needed"
+            echo "changed=false" >> $GITHUB_OUTPUT
+          fi
+
+  # 创建发布
+  create-release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    needs: version-check
+    if: needs.version-check.outputs.version-changed == 'true'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Update version
+        run: |
+          NEW_VERSION="${{ needs.version-check.outputs.new-version }}"
+          echo "Updating version to $NEW_VERSION"
+
+          # 更新根目录 package.json
+          npm version $NEW_VERSION --no-git-tag-version
+
+          # 更新各个应用的版本
+          cd apps/server && npm version $NEW_VERSION --no-git-tag-version && cd ../..
+          cd apps/web && npm version $NEW_VERSION --no-git-tag-version && cd ../..
+          cd apps/desktop && npm version $NEW_VERSION --no-git-tag-version && cd ../..
+
+          # 提交版本更新
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add .
+          git commit -m "chore: bump version to $NEW_VERSION"
+          git push
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          # 安装 conventional-changelog
+          npm install -g conventional-changelog-cli
+
+          # 生成 changelog
+          conventional-changelog -p angular -i CHANGELOG.md -s
+
+          # 提交 changelog
+          git add CHANGELOG.md
+          git commit -m "docs: update changelog for ${{ needs.version-check.outputs.new-version }}"
+          git push
+
+          # 获取 changelog 内容用于 release
+          CHANGELOG=$(sed -n '/## \[${{ needs.version-check.outputs.new-version }}\]/,/## \[/p' CHANGELOG.md | sed '$d')
+          echo "changelog<<EOF" >> $GITHUB_OUTPUT
+          echo "$CHANGELOG" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Create tag
+        run: |
+          git tag v${{ needs.version-check.outputs.new-version }}
+          git push origin v${{ needs.version-check.outputs.new-version }}
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ needs.version-check.outputs.new-version }}
+          name: Release v${{ needs.version-check.outputs.new-version }}
+          body: ${{ steps.changelog.outputs.changelog }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # 构建和发布 NPM 包
+  publish-npm:
+    name: Publish to NPM
+    runs-on: ubuntu-latest
+    needs: [version-check, create-release]
+    if: needs.version-check.outputs.version-changed == 'true'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build packages
+        run: pnpm build
+
+      - name: Publish shared packages
+        run: |
+          # 发布 shared-types
+          cd packages/shared-types
+          npm publish --access public
+          cd ../..
+
+          # 发布 eslint-config-custom
+          cd packages/eslint-config-custom
+          npm publish --access public
+          cd ../..
+
+          # 发布 vitest-config
+          cd packages/vitest-config
+          npm publish --access public
+          cd ../..
+
+          # 发布 tsconfig
+          cd packages/tsconfig
+          npm publish --access public
+          cd ../..
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  # 构建和发布 Docker 镜像
+  publish-docker:
+    name: Publish Docker Images
+    runs-on: ubuntu-latest
+    needs: [version-check, create-release]
+    if: needs.version-check.outputs.version-changed == 'true'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            ${{ github.repository }}/server
+            ${{ github.repository }}/web
+            ghcr.io/${{ github.repository }}/server
+            ghcr.io/${{ github.repository }}/web
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push Server image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./apps/server
+          push: true
+          tags: |
+            ${{ github.repository }}/server:${{ needs.version-check.outputs.new-version }}
+            ${{ github.repository }}/server:latest
+            ghcr.io/${{ github.repository }}/server:${{ needs.version-check.outputs.new-version }}
+            ghcr.io/${{ github.repository }}/server:latest
+          labels: ${{ steps.meta.outputs.labels }}
+
+      - name: Build and push Web image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./apps/web
+          push: true
+          tags: |
+            ${{ github.repository }}/web:${{ needs.version-check.outputs.new-version }}
+            ${{ github.repository }}/web:latest
+            ghcr.io/${{ github.repository }}/web:${{ needs.version-check.outputs.new-version }}
+            ghcr.io/${{ github.repository }}/web:latest
+          labels: ${{ steps.meta.outputs.labels }}
+
+  # 发布通知
+  notify-release:
+    name: Release Notification
+    runs-on: ubuntu-latest
+    needs: [version-check, create-release, publish-npm, publish-docker]
+    if: always() && needs.version-check.outputs.version-changed == 'true'
+    steps:
+      - name: Notify Slack
+        run: |
+          echo "🎉 Release v${{ needs.version-check.outputs.new-version }} is complete!"
+          echo "Release type: ${{ needs.version-check.outputs.release-type }}"
+          echo "NPM packages: ${{ needs.publish-npm.result }}"
+          echo "Docker images: ${{ needs.publish-docker.result }}"
+
+          # 这里可以添加 Slack 通知逻辑
+          # curl -X POST -H 'Content-type: application/json' \
+          #   --data "{\"text\":\"🎉 Release v${{ needs.version-check.outputs.new-version }} is now available!\\n\\n📦 NPM packages: ${{ needs.publish-npm.result }}\\n🐳 Docker images: ${{ needs.publish-docker.result }}\\n📋 Release notes: https://github.com/${{ github.repository }}/releases/tag/v${{ needs.version-check.outputs.new-version }}\"}" \
+          #   ${{ secrets.SLACK_WEBHOOK_URL }}
