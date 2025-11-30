@@ -22,13 +22,14 @@ import { CustomWinstonModule } from './winston/winston.module'
     }),
     // BullMQ 全局配置，使用现有的 Redis 连接
     BullModule.forRootAsync({
-      useFactory: () => ({
-        connection: {
-          host: process.env.REDIS_HOST || 'localhost',
-          port: parseInt(process.env.REDIS_PORT || '6379', 10),
-          password: process.env.REDIS_PASSWORD || undefined,
-        },
-      }),
+      useFactory: () =>
+        ({
+          connection: {
+            host: process.env.REDIS_HOST || 'localhost',
+            port: parseInt(process.env.REDIS_PORT || '6379', 10),
+            password: process.env.REDIS_PASSWORD || undefined,
+          },
+        }) as any,
     }),
     // Winston 日志模块
     CustomWinstonModule,

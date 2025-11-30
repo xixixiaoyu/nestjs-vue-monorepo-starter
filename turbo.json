@@ -8,6 +8,10 @@
       "dependsOn": ["^build"],
       "outputs": ["dist/**", ".next/**", "!.next/cache/**", "build/bin/**"]
     },
+    "build:ci": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**", ".next/**", "!.next/cache/**", "build/bin/**"]
+    },
     "lint": {
       "dependsOn": ["^lint"],
       "outputs": []

@@ -4,9 +4,9 @@ import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger'
 
 // 定义请求 DTO
 export class SendWelcomeEmailDto {
-  email: string
-  name: string
-  userId: string
+  email!: string
+  name!: string
+  userId!: string
 }
 
 @ApiTags('email')
