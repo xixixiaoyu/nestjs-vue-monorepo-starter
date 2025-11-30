@@ -1,0 +1,96 @@
+version: '3.8'
+
+# 开发环境配置
+# 使用方式: docker-compose -f docker-compose.base.yml -f docker-compose.dev.yml up
+
+services:
+  # NestJS API 服务 - 开发环境
+  server:
+    build:
+      context: ../../
+      dockerfile: apps/server/Dockerfile
+      target: development
+    container_name: ${COMPOSE_PROJECT_NAME:-nest-vue}-server-dev
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+      PORT: ${SERVER_PORT:-3000}
+      DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@postgres:5432/${DB_NAME:-appdb}
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET:-dev-jwt-secret-key}
+      CORS_ORIGINS: ${CORS_ORIGINS:-*}
+      ENABLE_SWAGGER: ${ENABLE_SWAGGER:-true}
+    ports:
+      - '${SERVER_PORT:-3000}:3000'
+    volumes:
+      # 源代码热重载
+      - ../../apps/server/src:/app/apps/server/src
+      - ../../apps/server/prisma:/app/apps/server/prisma
+      - ../../packages/shared-types/src:/app/packages/shared-types/src
+      # 日志目录
+      - ./logs:/app/apps/server/logs
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - app-network
+    # 开发环境不需要健康检查，因为代码会频繁变更
+
+  # Vue Web 应用 - 开发环境
+  web:
+    build:
+      context: ../../
+      dockerfile: apps/web/Dockerfile
+      target: development
+    container_name: ${COMPOSE_PROJECT_NAME:-nest-vue}-web-dev
+    restart: unless-stopped
+    environment:
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:3000}
+      NODE_ENV: development
+    ports:
+      - '${WEB_PORT:-5173}:5173'
+    volumes:
+      # 源代码热重载
+      - ../../apps/web/src:/app/apps/web/src
+      - ../../apps/web/public:/app/apps/web/public
+      - ../../packages/shared-types/src:/app/packages/shared-types/src
+    depends_on:
+      - server
+    networks:
+      - app-network
+
+  # 开发工具服务
+  adminer:
+    image: adminer:latest
+    container_name: ${COMPOSE_PROJECT_NAME:-nest-vue}-adminer-dev
+    restart: unless-stopped
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+    ports:
+      - '${ADMINER_PORT:-8080}:8080'
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - app-network
+    profiles:
+      - tools
+
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: ${COMPOSE_PROJECT_NAME:-nest-vue}-redis-commander-dev
+    restart: unless-stopped
+    environment:
+      REDIS_HOSTS: local:redis:6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+    ports:
+      - '${REDIS_COMMANDER_PORT:-8081}:8081'
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - app-network
+    profiles:
+      - tools

@@ -1,0 +1,139 @@
+version: '3.8'
+
+# 生产环境配置
+# 使用方式: docker-compose -f docker-compose.base.yml -f docker-compose.prod.yml up -d
+
+services:
+  # NestJS API 服务 - 生产环境
+  server:
+    build:
+      context: ../../
+      dockerfile: apps/server/Dockerfile
+      target: production
+    container_name: ${COMPOSE_PROJECT_NAME:-nest-vue}-server-prod
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: ${SERVER_PORT:-3000}
+      DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@postgres:5432/${DB_NAME:-appdb}
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET}
+      CORS_ORIGINS: ${CORS_ORIGINS}
+      ENABLE_SWAGGER: ${ENABLE_SWAGGER:-false}
+    ports:
+      - '${SERVER_PORT:-3000}:3000'
+    volumes:
+      # 只挂载日志目录，不挂载源代码
+      - ./logs:/app/apps/server/logs
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - app-network
+    # 资源限制
+    deploy:
+      resources:
+        limits:
+          cpus: '${SERVER_CPU_LIMIT:-1.0}'
+          memory: '${SERVER_MEMORY_LIMIT:-1G}'
+        reservations:
+          cpus: '${SERVER_CPU_RESERVATION:-0.5}'
+          memory: '${SERVER_MEMORY_RESERVATION:-512M}'
+    # 健康检查
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "require('http').get('http://localhost:3000/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    # 日志配置
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '10m'
+        max-file: '3'
+
+  # Vue Web 应用 - 生产环境
+  web:
+    build:
+      context: ../../
+      dockerfile: apps/web/Dockerfile
+      target: production
+    container_name: ${COMPOSE_PROJECT_NAME:-nest-vue}-web-prod
+    restart: unless-stopped
+    environment:
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:3000}
+    ports:
+      - '${WEB_PORT:-80}:80'
+    depends_on:
+      server:
+        condition: service_healthy
+    networks:
+      - app-network
+    # 资源限制
+    deploy:
+      resources:
+        limits:
+          cpus: '${WEB_CPU_LIMIT:-0.5}'
+          memory: '${WEB_MEMORY_LIMIT:-256M}'
+        reservations:
+          cpus: '${WEB_CPU_RESERVATION:-0.25}'
+          memory: '${WEB_MEMORY_RESERVATION:-128M}'
+    # 健康检查
+    healthcheck:
+      test: ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://localhost/health']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    # 日志配置
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '10m'
+        max-file: '3'
+
+  # Nginx 反向代理 (可选，用于负载均衡和 SSL 终止)
+  nginx:
+    image: nginx:alpine
+    container_name: ${COMPOSE_PROJECT_NAME:-nest-vue}-nginx-prod
+    restart: unless-stopped
+    ports:
+      - '${NGINX_HTTP_PORT:-80}:80'
+      - '${NGINX_HTTPS_PORT:-443}:443'
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      # SSL 证书目录
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - server
+      - web
+    networks:
+      - app-network
+    profiles:
+      - nginx
+    # 资源限制
+    deploy:
+      resources:
+        limits:
+          cpus: '${NGINX_CPU_LIMIT:-0.5}'
+          memory: '${NGINX_MEMORY_LIMIT:-256M}'
+        reservations:
+          cpus: '${NGINX_CPU_RESERVATION:-0.25}'
+          memory: '${NGINX_MEMORY_RESERVATION:-128M}'
+    # 健康检查
+    healthcheck:
+      test: ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://localhost/health']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s

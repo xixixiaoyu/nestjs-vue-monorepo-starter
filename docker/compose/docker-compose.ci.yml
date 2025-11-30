@@ -1,0 +1,128 @@
+version: '3.8'
+
+# CI/CD 环境配置
+# 使用方式: docker-compose -f docker-compose.base.yml -f docker-compose.ci.yml up --build
+
+services:
+  # NestJS API 服务 - CI 环境
+  server:
+    build:
+      context: ../../
+      dockerfile: apps/server/Dockerfile
+      target: production
+    container_name: ${COMPOSE_PROJECT_NAME:-nest-vue}-server-ci
+    environment:
+      NODE_ENV: test
+      PORT: ${SERVER_PORT:-3000}
+      DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@postgres:5432/${DB_NAME:-nest_vue_test}
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET:-ci-test-jwt-secret}
+      CORS_ORIGINS: ${CORS_ORIGINS:-*}
+      ENABLE_SWAGGER: ${ENABLE_SWAGGER:-true}
+    ports:
+      - '${SERVER_PORT:-3000}:3000'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - app-network
+    # CI 环境健康检查
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "require('http').get('http://localhost:3000/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Vue Web 应用 - CI 环境
+  web:
+    build:
+      context: ../../
+      dockerfile: apps/web/Dockerfile
+      target: production
+    container_name: ${COMPOSE_PROJECT_NAME:-nest-vue}-web-ci
+    environment:
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:3000}
+    ports:
+      - '${WEB_PORT:-80}:80'
+    depends_on:
+      server:
+        condition: service_healthy
+    networks:
+      - app-network
+    # CI 环境健康检查
+    healthcheck:
+      test: ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://localhost/health']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # 测试运行器服务
+  test-runner:
+    build:
+      context: ../../
+      dockerfile: apps/server/Dockerfile
+      target: development
+    container_name: ${COMPOSE_PROJECT_NAME:-nest-vue}-test-runner
+    environment:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@postgres:5432/${DB_NAME:-nest_vue_test}
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET:-ci-test-jwt-secret}
+    volumes:
+      - ../../apps/server/src:/app/apps/server/src
+      - ../../apps/server/tests:/app/apps/server/tests
+      - ../../packages/shared-types/src:/app/packages/shared-types/src
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - app-network
+    # 运行测试命令
+    command: >
+      sh -c "
+        echo 'Waiting for services to be ready...' &&
+        sleep 10 &&
+        echo 'Running database migrations...' &&
+        cd apps/server && pnpm prisma:migrate &&
+        echo 'Running tests...' &&
+        pnpm test &&
+        echo 'Running e2e tests...' &&
+        pnpm test:e2e
+      "
+    profiles:
+      - testing
+
+  # 代码质量检查服务
+  quality-check:
+    build:
+      context: ../../
+      dockerfile: apps/server/Dockerfile
+      target: development
+    container_name: ${COMPOSE_PROJECT_NAME:-nest-vue}-quality-check
+    volumes:
+      - ../../apps/server/src:/app/apps/server/src
+      - ../../apps/web/src:/app/apps/web/src
+      - ../../packages:/app/packages
+    command: >
+      sh -c "
+        echo 'Running linting...' &&
+        pnpm lint &&
+        echo 'Running type checking...' &&
+        pnpm typecheck &&
+        echo 'Running security audit...' &&
+        pnpm audit
+      "
+    profiles:
+      - quality
