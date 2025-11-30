@@ -16,7 +16,7 @@ export class UsersService extends BaseService {
     @Inject(PrismaService) prisma: PrismaService,
     @Inject(ConfigService) configService: ConfigService,
     @InjectPinoLogger(UsersService.name) logger: PinoLogger,
-    cls: ClsService
+    @Inject(ClsService) cls: ClsService
   ) {
     super(prisma, configService, logger, cls)
   }

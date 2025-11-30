@@ -22,6 +22,16 @@ const routes: RouteRecordRaw[] = [
       requiresAuth: false,
     },
   },
+  // API 示例页面
+  {
+    path: '/api-demo',
+    name: 'api-demo',
+    component: () => import('@/components/ExampleApiDemo.vue'),
+    meta: {
+      title: 'API 示例',
+      requiresAuth: false,
+    },
+  },
   // 添加受保护的路由示例
   {
     path: '/dashboard',

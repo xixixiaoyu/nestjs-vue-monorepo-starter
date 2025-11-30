@@ -26,8 +26,11 @@
             <li v-for="u in users" :key="u.id">{{ u.email }} — {{ u.name ?? 'N/A' }}</li>
           </ul>
         </div>
-        <div class="mt-6 pt-6 border-t">
+        <div class="mt-6 pt-6 border-t space-y-2">
           <Button variant="outline" @click="$router.push('/auth')"> 前往登录/注册页面 </Button>
+          <Button variant="outline" @click="$router.push('/api-demo')" class="ml-2">
+            查看 API 示例 (Axios + TanStack Query)
+          </Button>
         </div>
       </div>
     </Card>

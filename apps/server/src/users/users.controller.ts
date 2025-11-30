@@ -1,10 +1,10 @@
-import { Body, Controller, Get, Post } from '@nestjs/common'
+import { Body, Controller, Get, Post, Inject } from '@nestjs/common'
 import { UsersService } from './users.service'
 import { CreateUserRequestDto } from '@project/shared-types'
 
 @Controller('api/users')
 export class UsersController {
-  constructor(private readonly users: UsersService) {}
+  constructor(@Inject(UsersService) private readonly users: UsersService) {}
 
   @Get()
   async list() {
