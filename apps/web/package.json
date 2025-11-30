@@ -5,7 +5,7 @@
   "type": "module",
   "dependencies": {
     "@project/shared-types": "workspace:*",
-    "@tanstack/vue-query": "^5.92.0",
+    "@tanstack/vue-query": "5.92.0",
     "@vueuse/core": "14.1.0",
     "axios": "1.13.2",
     "class-variance-authority": "0.7.1",
@@ -22,7 +22,7 @@
     "@vitejs/plugin-vue": "6.0.2",
     "@vue/test-utils": "2.4.6",
     "autoprefixer": "10.4.22",
-    "jsdom": "^27.2.0",
+    "jsdom": "27.2.0",
     "postcss": "8.5.6",
     "tailwindcss": "3.4.0",
     "tailwindcss-animate": "1.0.7",
