@@ -4,5 +4,12 @@
   "version": "0.1.0",
   "type": "module",
   "main": "src/index.ts",
-  "types": "src/index.ts"
+  "types": "src/index.ts",
+  "dependencies": {
+    "zod": "^4.1.13",
+    "nestjs-zod": "^5.0.1"
+  },
+  "peerDependencies": {
+    "nestjs-zod": "^5.0.1"
+  }
 }

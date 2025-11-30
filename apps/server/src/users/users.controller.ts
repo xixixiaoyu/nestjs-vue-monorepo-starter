@@ -1,14 +1,6 @@
 import { Body, Controller, Get, Post } from '@nestjs/common'
 import { UsersService } from './users.service'
-import { createZodDto } from 'nestjs-zod'
-import { z } from 'zod'
-
-const CreateUserSchema = z.object({
-  email: z.string().email(),
-  name: z.string().optional(),
-})
-
-class CreateUserDto extends createZodDto(CreateUserSchema) {}
+import { CreateUserRequestDto } from '@project/shared-types'
 
 @Controller('api/users')
 export class UsersController {
@@ -20,7 +12,7 @@ export class UsersController {
   }
 
   @Post()
-  async create(@Body() dto: CreateUserDto) {
+  async create(@Body() dto: CreateUserRequestDto) {
     return this.users.create({ email: dto.email, name: dto.name })
   }
 }
