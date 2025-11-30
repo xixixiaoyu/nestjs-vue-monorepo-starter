@@ -8,7 +8,7 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger'
 import { NodeEnvironment } from './config/environment'
 import cookieParser from 'cookie-parser'
 import helmet from 'helmet'
-import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston'
+import { Logger } from '@nestjs/common'
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule)
@@ -79,9 +79,9 @@ async function bootstrap() {
   const port = configService.get<number>('PORT') ?? 3001
   await app.listen(port)
 
-  const logger = app.get(WINSTON_MODULE_NEST_PROVIDER)
-  logger.log(`Server started on port ${port} in ${environment} mode`, 'Bootstrap')
-  logger.log(`Swagger documentation available at http://localhost:${port}/docs`, 'Bootstrap')
+  const logger = new Logger('Bootstrap')
+  logger.log(`Server started on port ${port} in ${environment} mode`)
+  logger.log(`Swagger documentation available at http://localhost:${port}/docs`)
 }
 
 bootstrap()
