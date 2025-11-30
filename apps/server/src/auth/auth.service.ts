@@ -33,7 +33,7 @@ export class AuthService {
     return {
       id: user.id,
       email: user.email,
-      name: user.name,
+      name: user.name || undefined,
       createdAt: user.createdAt.toISOString(),
       updatedAt: user.updatedAt.toISOString(),
     }
@@ -99,7 +99,7 @@ export class AuthService {
     const userDto: UserDto = {
       id: user.id,
       email: user.email,
-      name: user.name,
+      name: user.name || undefined,
       createdAt: user.createdAt.toISOString(),
       updatedAt: user.updatedAt.toISOString(),
     }

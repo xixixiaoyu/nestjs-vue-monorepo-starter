@@ -130,10 +130,10 @@ export class HttpService {
       })
 
       return {
-        data: response._data,
+        data: response._data as T,
         status: response.status,
         statusText: response.statusText,
-        headers: response.headers as Record<string, string>,
+        headers: response.headers as unknown as Record<string, string>,
       }
     } catch (error) {
       // 统一错误处理

@@ -1,7 +1,8 @@
 import { ConfigService } from '@nestjs/config'
 import { NodeEnvironment } from '../config/environment'
+import { ClsService } from 'nestjs-cls'
 
-export const createPinoLogger = (configService: ConfigService) => {
+export const createPinoLogger = (configService: ConfigService, cls?: ClsService) => {
   const environment = configService.get<NodeEnvironment>('NODE_ENV') ?? NodeEnvironment.Development
   const isProduction = environment === NodeEnvironment.Production
   const logLevel = configService.get<string>('LOG_LEVEL') ?? 'info'
@@ -45,16 +46,36 @@ export const createPinoLogger = (configService: ConfigService) => {
         level: (label: any) => ({ level: label }),
         log: (object: any) => {
           // 添加时间戳和上下文信息
-          return {
+          const logObject = {
             ...object,
             timestamp: new Date().toISOString(),
             // 如果没有 context，使用默认值
             context: object.context || 'Application',
           }
+
+          // 从 CLS 中获取 requestId 并添加到日志中
+          if (cls) {
+            const requestId = cls.get('requestId')
+            if (requestId && !logObject.req?.id) {
+              logObject.requestId = requestId
+            }
+          }
+
+          return logObject
         },
       },
-      // 自定义请求 ID
-      genReqId: (req: any) => (req.headers['x-request-id'] as string) || generateRequestId(),
+      // 自定义请求 ID - 优先从 CLS 中获取，确保日志里的 req.id 和 CLS 里的 ID 一致
+      genReqId: (req: any) => {
+        // 尝试从 CLS 中获取 requestId
+        if (cls) {
+          const clsRequestId = cls.get('requestId')
+          if (clsRequestId) {
+            return clsRequestId
+          }
+        }
+        // 回退到从请求头获取或生成新的
+        return (req.headers['x-request-id'] as string) || generateRequestId()
+      },
       // 自定义错误处理
       customErrorHandling: (err: any, req: any, _res: any) => {
         // 记录错误堆栈

@@ -1,12 +1,15 @@
-import { Module } from '@nestjs/common'
+import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common'
 import { ConfigModule, ConfigService } from '@nestjs/config'
 import { LoggerModule } from 'nestjs-pino'
+import { ClsModule, ClsService } from 'nestjs-cls'
 import { AppController } from './app.controller'
 import { AppService } from './app.service'
 import { PrismaModule } from './prisma/prisma.module'
 import { validateEnvironment } from './config/environment'
 import { createPinoLogger } from './pino/pino.config'
 import { EmailModule } from './email/email.module'
+import { ClsMiddleware } from './common/cls/cls.middleware'
+import { ClsExampleModule } from './examples/cls-example.module'
 
 @Module({
   imports: [
@@ -16,10 +19,16 @@ import { EmailModule } from './email/email.module'
       validate: validateEnvironment,
       envFilePath: '.env',
     }),
+    // CLS 模块 - 全局注册，为每个请求创建上下文
+    ClsModule.forRoot({
+      global: true,
+      middleware: { mount: true },
+    }),
     // Pino 日志模块
     LoggerModule.forRootAsync({
-      useFactory: createPinoLogger,
-      inject: [ConfigService],
+      useFactory: (configService: ConfigService, cls: ClsService) =>
+        createPinoLogger(configService, cls),
+      inject: [ConfigService, ClsService],
     }),
     PrismaModule,
     // RedisModule,
@@ -27,8 +36,13 @@ import { EmailModule } from './email/email.module'
     // AuthModule,
     // UsersModule,
     EmailModule,
+    ClsExampleModule,
   ],
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(ClsMiddleware).forRoutes('*')
+  }
+}

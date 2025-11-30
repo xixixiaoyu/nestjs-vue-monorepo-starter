@@ -1,17 +1,24 @@
-import { Injectable, ServiceUnavailableException } from '@nestjs/common'
+import { Injectable, ServiceUnavailableException, Inject } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { randomUUID } from 'node:crypto'
 import type { CreateUserInput, UserDto } from '@shared-types'
 import { PrismaService } from '../prisma/prisma.service'
 import { BaseService } from '../common/base/base.service'
 import { NotFoundException } from '../common/exceptions/business.exception'
+import { ClsService } from 'nestjs-cls'
+import { PinoLogger, InjectPinoLogger } from 'nestjs-pino'
 
 @Injectable()
 export class UsersService extends BaseService {
   private fallbackUsers: UserDto[] = []
 
-  constructor(prisma: PrismaService, configService: ConfigService) {
-    super(prisma, configService)
+  constructor(
+    @Inject(PrismaService) prisma: PrismaService,
+    @Inject(ConfigService) configService: ConfigService,
+    @InjectPinoLogger(UsersService.name) logger: PinoLogger,
+    cls: ClsService
+  ) {
+    super(prisma, configService, logger, cls)
   }
 
   async list(): Promise<UserDto[]> {
@@ -33,7 +40,7 @@ export class UsersService extends BaseService {
       const userDtos: UserDto[] = users.map((user) => ({
         id: user.id,
         email: user.email,
-        name: user.name,
+        name: user.name || undefined,
         createdAt: user.createdAt.toISOString(),
         updatedAt: user.updatedAt.toISOString(),
       }))
@@ -55,7 +62,7 @@ export class UsersService extends BaseService {
         const user: UserDto = {
           id: `local_${randomUUID()}`,
           email: data.email,
-          name: data.name ?? null,
+          name: data.name ?? undefined,
           createdAt: now,
           updatedAt: now,
         }
@@ -69,7 +76,7 @@ export class UsersService extends BaseService {
       const userDto: UserDto = {
         id: user.id,
         email: user.email,
-        name: user.name,
+        name: user.name || undefined,
         createdAt: user.createdAt.toISOString(),
         updatedAt: user.updatedAt.toISOString(),
       }
@@ -98,7 +105,7 @@ export class UsersService extends BaseService {
       return {
         id: user.id,
         email: user.email,
-        name: user.name,
+        name: user.name || undefined,
         createdAt: user.createdAt.toISOString(),
         updatedAt: user.updatedAt.toISOString(),
       }
@@ -125,7 +132,7 @@ export class UsersService extends BaseService {
       return {
         id: user.id,
         email: user.email,
-        name: user.name,
+        name: user.name || undefined,
         createdAt: user.createdAt.toISOString(),
         updatedAt: user.updatedAt.toISOString(),
       }
