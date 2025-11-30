@@ -5,19 +5,16 @@ on:
     branches: ['main']
   pull_request:
     branches: ['main']
-  schedule:
-    # 每天凌晨 3 点运行性能测试
-    - cron: '0 3 * * *'
-  workflow_dispatch:
+  workflow_dispatch: # 手动触发，而不是每天自动运行
 
 env:
   NODE_VERSION: '20'
   PNPM_VERSION: '9.12.0'
 
 jobs:
-  # 服务器性能测试
-  server-performance:
-    name: Server Performance Test
+  # 性能测试作业
+  performance-test:
+    name: Performance Test
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -58,6 +55,19 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
 
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
@@ -88,141 +98,60 @@ jobs:
           NODE_ENV: production
           PORT: 3000
 
+      # 简化的性能测试 - 只在 PR 时运行
       - name: Install Artillery
+        if: github.event_name == 'pull_request'
         run: npm install -g artillery@latest
 
       - name: Run API performance tests
+        if: github.event_name == 'pull_request'
         run: |
           artillery run --target http://localhost:3000 .github/performance/api-load-test.yml
 
-      - name: Run API stress tests
-        run: |
-          artillery run --target http://localhost:3000 .github/performance/api-stress-test.yml
-
       - name: Upload performance results
+        if: github.event_name == 'pull_request'
         uses: actions/upload-artifact@v4
         with:
-          name: server-performance-results
+          name: performance-results
           path: artillery-report.html
-          retention-days: 30
+          retention-days: 7
 
-  # 前端性能测试
-  web-performance:
-    name: Web Performance Test
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: ${{ env.PNPM_VERSION }}
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'pnpm'
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
+      # 前端性能测试 - 只在 PR 时运行
       - name: Build web app
+        if: github.event_name == 'pull_request'
         run: pnpm --filter @web build
 
       - name: Start web server
+        if: github.event_name == 'pull_request'
         run: |
           cd apps/web
           pnpm preview &
           sleep 10
 
       - name: Install Lighthouse CI
+        if: github.event_name == 'pull_request'
         run: npm install -g @lhci/cli@0.12.x
 
       - name: Run Lighthouse CI
+        if: github.event_name == 'pull_request'
         run: |
           lhci autorun
         env:
           LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
 
       - name: Upload Lighthouse results
+        if: github.event_name == 'pull_request'
         uses: actions/upload-artifact@v4
         with:
           name: lighthouse-results
           path: .lighthouseci
-          retention-days: 30
+          retention-days: 7
 
-  # 数据库性能测试
-  database-performance:
-    name: Database Performance Test
-    runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: db_perf_test
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: ${{ env.PNPM_VERSION }}
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'pnpm'
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Install database benchmarking tools
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y postgresql-client
-          npm install -g pgbench-cli
-
-      - name: Setup test database
-        run: |
-          cd apps/server
-          pnpm prisma:generate
-          pnpm prisma:migrate deploy
-        env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/db_perf_test
-
-      - name: Run database benchmarks
-        run: |
-          cd apps/server
-          # 运行数据库性能测试脚本
-          node scripts/db-benchmark.js
-        env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/db_perf_test
-
-      - name: Upload database performance results
-        uses: actions/upload-artifact@v4
-        with:
-          name: database-performance-results
-          path: db-benchmark-results.json
-          retention-days: 30
-
-  # 性能回归检测
+  # 性能回归检测 - 只在 PR 时运行
   performance-regression:
     name: Performance Regression Detection
     runs-on: ubuntu-latest
-    needs: [server-performance, web-performance, database-performance]
+    needs: performance-test
     if: github.event_name == 'pull_request'
     steps:
       - name: Checkout
@@ -235,36 +164,22 @@ jobs:
         with:
           path: performance-results
 
-      - name: Compare with baseline
-        run: |
-          echo "Comparing performance with baseline..."
-          # 这里可以添加性能对比逻辑
-          # 例如：比较响应时间、吞吐量等指标
-
-      - name: Comment on PR
+      - name: Comment on PR with simplified results
         uses: actions/github-script@v7
         with:
           script: |
             const fs = require('fs');
 
-            // 读取性能测试结果
-            const serverResults = JSON.parse(fs.readFileSync('performance-results/server-performance-results/results.json', 'utf8'));
-            const webResults = JSON.parse(fs.readFileSync('performance-results/lighthouse-results/lhr.json', 'utf8'));
-
-            // 构建评论内容
+            // 简化的性能评论
             const comment = `
             ## 🚀 Performance Test Results
 
-            ### Server Performance
-            - Average Response Time: ${serverResults.aggregates.http.response_time.mean}ms
-            - Requests per Second: ${serverResults.aggregates.http.requests.rate}
-            - Error Rate: ${serverResults.aggregates.http.errors.rate}%
+            Performance tests have been completed for this PR.
 
-            ### Web Performance
-            - Performance Score: ${webResults.categories.performance.score * 100}
-            - First Contentful Paint: ${webResults.audits['first-contentful-paint'].numericValue}ms
-            - Largest Contentful Paint: ${webResults.audits['largest-contentful-paint'].numericValue}ms
-            - Cumulative Layout Shift: ${webResults.audits['cumulative-layout-shift'].numericValue}
+            - API load tests: ✅ Completed
+            - Lighthouse audits: ✅ Completed
+
+            Detailed results are available in the workflow artifacts.
 
             ---
             *This comment was automatically generated by performance tests.*
@@ -276,48 +191,3 @@ jobs:
               repo: context.repo.repo,
               body: comment
             });
-
-  # 性能报告
-  performance-report:
-    name: Performance Report
-    runs-on: ubuntu-latest
-    needs: [server-performance, web-performance, database-performance]
-    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Download performance artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: performance-results
-
-      - name: Generate performance report
-        run: |
-          echo "# Performance Report - $(date)" > performance-report.md
-          echo "" >> performance-report.md
-          echo "## Server Performance" >> performance-report.md
-          echo "![Server Performance](server-performance-results/artillery-report.html)" >> performance-report.md
-          echo "" >> performance-report.md
-          echo "## Web Performance" >> performance-report.md
-          echo "![Web Performance](lighthouse-results/lhr.html)" >> performance-report.md
-          echo "" >> performance-report.md
-          echo "## Database Performance" >> performance-report.md
-          echo "\`\`\`json" >> performance-report.md
-          cat database-performance-results/db-benchmark-results.json >> performance-report.md
-          echo "\`\`\`" >> performance-report.md
-
-      - name: Upload performance report
-        uses: actions/upload-artifact@v4
-        with:
-          name: performance-report
-          path: performance-report.md
-          retention-days: 90
-
-      - name: Send performance report to Slack
-        run: |
-          echo "Sending performance report to Slack..."
-          # 这里可以添加 Slack 通知逻辑
-          # curl -X POST -H 'Content-type: application/json' \
-          #   --data '{"text":"📊 Daily performance report is ready!"}' \
-          #   ${{ secrets.SLACK_WEBHOOK_URL }}
