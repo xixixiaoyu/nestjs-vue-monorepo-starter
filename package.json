@@ -22,11 +22,12 @@
     "typescript": "5.9.3"
   },
   "scripts": {
-    "dev": "turbo run dev",
+    "dev": "turbo run dev --filter=!@desktop",
     "dev:web": "turbo run dev --filter=@web",
     "dev:server": "turbo run dev --filter=@server",
     "dev:desktop": "turbo run dev --filter=@desktop",
     "dev:all": "concurrently \"pnpm dev:server\" \"pnpm dev:web\" \"pnpm dev:desktop\"",
+    "dev:with-desktop": "turbo run dev",
     "build": "turbo run build",
     "build:desktop": "turbo run build --filter=@desktop",
     "setup:wails": "./scripts/setup-wails.sh",
