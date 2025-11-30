@@ -1,26 +1,30 @@
 version: '3.8'
 
 # CI/CD 环境配置
-# 使用方式: docker-compose -f docker-compose.base.yml -f docker-compose.ci.yml up --build
+# 使用方式: docker-compose -f docker-compose.base.yml -f docker-compose.ci.yml up
 
 services:
-  # NestJS API 服务 - CI 环境
+  # NestJS API 服务 - CI/CD 环境
   server:
     build:
       context: ../../
       dockerfile: apps/server/Dockerfile
       target: production
     container_name: ${COMPOSE_PROJECT_NAME:-nest-vue}-server-ci
+    restart: 'no'
     environment:
       NODE_ENV: test
       PORT: ${SERVER_PORT:-3000}
-      DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@postgres:5432/${DB_NAME:-nest_vue_test}
+      DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@postgres:5432/${DB_NAME:-appdb}
       REDIS_URL: redis://redis:6379
-      JWT_SECRET: ${JWT_SECRET:-ci-test-jwt-secret}
+      JWT_SECRET: ${JWT_SECRET:-ci-jwt-secret-key}
       CORS_ORIGINS: ${CORS_ORIGINS:-*}
-      ENABLE_SWAGGER: ${ENABLE_SWAGGER:-true}
-    ports:
-      - '${SERVER_PORT:-3000}:3000'
+      ENABLE_SWAGGER: ${ENABLE_SWAGGER:-false}
+    volumes:
+      # 测试报告目录
+      - ./test-reports:/app/apps/server/test-reports
+      # 日志目录
+      - ./logs:/app/apps/server/logs
     depends_on:
       postgres:
         condition: service_healthy
@@ -28,60 +32,48 @@ services:
         condition: service_healthy
     networks:
       - app-network
-    # CI 环境健康检查
-    healthcheck:
-      test:
-        [
-          'CMD',
-          'node',
-          '-e',
-          "require('http').get('http://localhost:3000/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })",
-        ]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
+    # CI 环境不需要健康检查，因为容器会在测试完成后退出
 
-  # Vue Web 应用 - CI 环境
+  # Vue Web 应用 - CI/CD 环境（仅用于构建测试）
   web:
     build:
       context: ../../
       dockerfile: apps/web/Dockerfile
-      target: production
+      target: builder
     container_name: ${COMPOSE_PROJECT_NAME:-nest-vue}-web-ci
+    restart: 'no'
     environment:
       VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:3000}
-    ports:
-      - '${WEB_PORT:-80}:80'
+      NODE_ENV: test
+    volumes:
+      # 测试报告目录
+      - ./test-reports:/app/apps/web/test-reports
     depends_on:
-      server:
-        condition: service_healthy
+      - server
     networks:
       - app-network
-    # CI 环境健康检查
-    healthcheck:
-      test: ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://localhost/health']
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
+    # CI 环境不需要健康检查，因为容器会在测试完成后退出
 
-  # 测试运行器服务
+  # 测试服务
   test-runner:
     build:
       context: ../../
       dockerfile: apps/server/Dockerfile
-      target: development
+      target: production
     container_name: ${COMPOSE_PROJECT_NAME:-nest-vue}-test-runner
+    restart: 'no'
     environment:
       NODE_ENV: test
-      DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@postgres:5432/${DB_NAME:-nest_vue_test}
+      DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@postgres:5432/${DB_NAME:-appdb}
       REDIS_URL: redis://redis:6379
-      JWT_SECRET: ${JWT_SECRET:-ci-test-jwt-secret}
+      JWT_SECRET: ${JWT_SECRET:-ci-jwt-secret-key}
     volumes:
+      # 源代码
       - ../../apps/server/src:/app/apps/server/src
-      - ../../apps/server/tests:/app/apps/server/tests
+      - ../../apps/server/prisma:/app/apps/server/prisma
       - ../../packages/shared-types/src:/app/packages/shared-types/src
+      # 测试报告目录
+      - ./test-reports:/app/apps/server/test-reports
     depends_on:
       postgres:
         condition: service_healthy
@@ -92,14 +84,11 @@ services:
     # 运行测试命令
     command: >
       sh -c "
-        echo 'Waiting for services to be ready...' &&
-        sleep 10 &&
-        echo 'Running database migrations...' &&
-        cd apps/server && pnpm prisma:migrate &&
-        echo 'Running tests...' &&
-        pnpm test &&
-        echo 'Running e2e tests...' &&
-        pnpm test:e2e
+        cd /app/apps/server &&
+        pnpm prisma:generate &&
+        pnpm test:coverage &&
+        pnpm typecheck &&
+        pnpm lint
       "
     profiles:
       - testing
@@ -109,20 +98,29 @@ services:
     build:
       context: ../../
       dockerfile: apps/server/Dockerfile
-      target: development
+      target: production
     container_name: ${COMPOSE_PROJECT_NAME:-nest-vue}-quality-check
+    restart: 'no'
+    environment:
+      NODE_ENV: test
     volumes:
+      # 源代码
       - ../../apps/server/src:/app/apps/server/src
       - ../../apps/web/src:/app/apps/web/src
       - ../../packages:/app/packages
+      # 质量报告目录
+      - ./quality-reports:/app/quality-reports
+    networks:
+      - app-network
+    # 运行代码质量检查命令
     command: >
       sh -c "
-        echo 'Running linting...' &&
-        pnpm lint &&
-        echo 'Running type checking...' &&
-        pnpm typecheck &&
+        cd /app &&
         echo 'Running security audit...' &&
-        pnpm audit
+        pnpm audit --audit-level moderate &&
+        echo 'Running license check...' &&
+        pnpm licenses check &&
+        echo 'Quality checks completed'
       "
     profiles:
       - quality

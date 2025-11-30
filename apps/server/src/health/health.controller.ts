@@ -3,25 +3,26 @@ import { ApiOperation, ApiTags, ApiResponse } from '@nestjs/swagger'
 import {
   HealthCheckService,
   HealthCheck,
-  TypeOrmHealthIndicator,
   MemoryHealthIndicator,
   DiskHealthIndicator,
+  HealthIndicatorResult,
 } from '@nestjs/terminus'
 import { ConfigService } from '@nestjs/config'
 import { RedisHealthIndicator } from './redis.health-indicator'
 import { PinoLogger } from 'nestjs-pino'
+import { PrismaService } from '../prisma/prisma.service'
 
 @ApiTags('Health')
 @Controller('health')
 export class HealthController {
   constructor(
     private readonly health: HealthCheckService,
-    private readonly db: TypeOrmHealthIndicator,
     private readonly memory: MemoryHealthIndicator,
     private readonly disk: DiskHealthIndicator,
     private readonly redis: RedisHealthIndicator,
     private readonly configService: ConfigService,
-    private readonly logger: PinoLogger
+    private readonly logger: PinoLogger,
+    private readonly prisma: PrismaService
   ) {
     this.logger.setContext('HealthController')
   }
@@ -31,10 +32,10 @@ export class HealthController {
   @ApiOperation({ summary: '系统健康检查' })
   @ApiResponse({ status: 200, description: '系统健康' })
   @ApiResponse({ status: 503, description: '系统不健康' })
-  check() {
+  async check() {
     this.logger.info('执行健康检查')
     return this.health.check([
-      () => this.db.pingCheck('database', { timeout: 3000 }),
+      () => this.checkDatabase(),
       () => this.redis.isHealthy('redis'),
       () => this.memory.checkHeap('memory_heap', 150 * 1024 * 1024), // 150MB
       () => this.disk.checkStorage('storage', { thresholdPercent: 0.9, path: '/' }),
@@ -46,12 +47,9 @@ export class HealthController {
   @ApiOperation({ summary: '就绪检查' })
   @ApiResponse({ status: 200, description: '服务就绪' })
   @ApiResponse({ status: 503, description: '服务未就绪' })
-  readiness() {
+  async readiness() {
     this.logger.info('执行就绪检查')
-    return this.health.check([
-      () => this.db.pingCheck('database', { timeout: 3000 }),
-      () => this.redis.isHealthy('redis'),
-    ])
+    return this.health.check([() => this.checkDatabase(), () => this.redis.isHealthy('redis')])
   }
 
   @Get('liveness')
@@ -81,5 +79,19 @@ export class HealthController {
 
     this.logger.info('获取应用信息', info)
     return info
+  }
+
+  private async checkDatabase(): Promise<HealthIndicatorResult> {
+    try {
+      await this.prisma.$queryRaw`SELECT 1`
+      return {
+        database: {
+          status: 'up',
+        },
+      } as HealthIndicatorResult
+    } catch (error) {
+      this.logger.error('数据库健康检查失败', error)
+      throw new Error('数据库连接失败')
+    }
   }
 }

@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common'
-import { HealthIndicator, HealthCheckResult } from '@nestjs/terminus'
+import { HealthIndicator, HealthIndicatorResult } from '@nestjs/terminus'
 import { Redis } from 'ioredis'
 import { PinoLogger } from 'nestjs-pino'
 
@@ -13,7 +13,7 @@ export class RedisHealthIndicator extends HealthIndicator {
     this.logger.setContext('RedisHealthIndicator')
   }
 
-  async isHealthy(key: string): Promise<HealthCheckResult> {
+  async isHealthy(key: string): Promise<HealthIndicatorResult> {
     try {
       const start = Date.now()
       await this.redis.ping()
